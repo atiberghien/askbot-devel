@@ -5,12 +5,16 @@ import sys
 import askbot
 import site
 
+from django.utils.translation import ugettext_lazy as _
+
+PROJECT_ROOT = os.path.dirname(__file__)
+
 #this line is added so that we can import pre-packaged askbot dependencies
 ASKBOT_ROOT = os.path.abspath(os.path.dirname(askbot.__file__))
 site.addsitedir(os.path.join(ASKBOT_ROOT, 'deps'))
 
-DEBUG = True#set to True to enable debugging
-TEMPLATE_DEBUG = False#keep false when debugging jinja2 templates
+DEBUG = True  # set to True to enable debugging
+TEMPLATE_DEBUG = False  # keep false when debugging jinja2 templates
 INTERNAL_IPS = ('127.0.0.1',)
 
 ADMINS = (
@@ -19,25 +23,35 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
-DATABASE_ENGINE = 'postgresql_psycopg2' # only postgres (>8.3) and mysql are supported so far others have not been tested yet
-DATABASE_NAME = ''             # Or path to database file if using sqlite3.
-DATABASE_USER = ''             # Not used with sqlite3.
-DATABASE_PASSWORD = ''         # Not used with sqlite3.
-DATABASE_HOST = ''             # Set to empty string for localhost. Not used with sqlite3.
-DATABASE_PORT = ''             # Set to empty string for default. Not used with sqlite3.
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': '',                      # Or path to database file if using sqlite3.
+        'USER': '',                      # Not used with sqlite3.
+        'PASSWORD': '',                  # Not used with sqlite3.
+        'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
+        'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
+    }
+}
 
-#outgoing mail server settings
+#Outcoming mail settings
 SERVER_EMAIL = ''
-DEFAULT_FROM_EMAIL = ''
-EMAIL_HOST_USER = ''
-EMAIL_HOST_PASSWORD = ''
-EMAIL_SUBJECT_PREFIX = ''
-EMAIL_HOST=''
-EMAIL_PORT=''
-EMAIL_USE_TLS=False
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
-#incoming mail settings
+DEFAULT_FROM_EMAIL = SERVER_EMAIL
+
+if not 'EMAIL_SUBJECT_PREFIX' in locals():
+    EMAIL_SUBJECT_PREFIX = '[Askbot] '
+
+# Write emails to console if in development mode
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# else, use SMTP
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'localhost'
+    EMAIL_PORT = 25
+
+#Incoming mail settings
 #after filling out these settings - please
 #go to the site's live settings and enable the feature
 #"Email settings" -> "allow asking by email"
@@ -52,66 +66,71 @@ IMAP_HOST_PASSWORD = ''
 IMAP_PORT = ''
 IMAP_USE_TLS = False
 
-# Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
-# although not all choices may be available on all operating systems.
-# On Unix systems, a value of None will cause Django to use the same
-# timezone as the operating system.
-# If running in a Windows environment this must be set to the same as your
-# system time zone.
 TIME_ZONE = 'America/Chicago'
+# http://www.i18nguy.com/unicode/language-identifiers.html
+LANGUAGE_CODE = 'en-us'
 
 SITE_ID = 1
 
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
 USE_I18N = True
-LANGUAGE_CODE = 'en'
+
+# If you set this to False, Django will not format dates, numbers and
+# calendars according to the current locale
+USE_L10N = True
 
 # Absolute path to the directory that holds media.
-# Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = os.path.join(os.path.dirname(__file__), 'askbot', 'upfiles')
-MEDIA_URL = '/upfiles/'#url to uploaded media
-STATIC_URL = '/m/'#url to project static files
+MEDIA_ROOT = os.path.join(PROJECT_ROOT, 'media/')
+MEDIA_URL = '/media/'
 
-PROJECT_ROOT = os.path.dirname(__file__)
-STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')#path to files collected by collectstatic
+STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')
+STATIC_URL = '/static/'
 
-# URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
-# trailing slash.
-# Examples: "http://foo.com/media/", "/media/".
-ADMIN_MEDIA_PREFIX = STATIC_URL + 'admin/'#must be this value
+ADMIN_MEDIA_PREFIX = STATIC_URL + 'admin/'
+
+# Additional locations of static files
+STATICFILES_DIRS = (
+    # Put strings here, like "/home/html/static" or "C:/www/django/static".
+    # Always use forward slashes, even on Windows.
+    # Don't forget to use absolute paths, not relative paths.
+)
+
+# List of finder classes that know how to find static files in
+# various locations.
+STATICFILES_FINDERS = (
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+#    'django.contrib.staticfiles.finders.DefaultStorageFinder',
+)
 
 # Make up some unique string, and don't share it with anybody.
-SECRET_KEY = 'sdljdfjkldsflsdjkhsjkldgjlsdgfs s '
+SECRET_KEY = 'sdljdfjkldsflsdjkhsjkldgjlsdgfss'
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.load_template_source',
-    'django.template.loaders.app_directories.load_template_source',
+    'django.template.loaders.filesystem.Loader',
+    'django.template.loaders.app_directories.Loader',
     #below is askbot stuff for this tuple
     #'askbot.skins.loaders.load_template_source', #changed due to bug 97
     'askbot.skins.loaders.filesystem_load_template_source',
     #'django.template.loaders.eggs.load_template_source',
 )
 
-
 MIDDLEWARE_CLASSES = (
-    #'django.middleware.gzip.GZipMiddleware',
-    #'askbot.middleware.locale.LocaleMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    #'django.middleware.cache.UpdateCacheMiddleware',
     'django.middleware.common.CommonMiddleware',
-    #'django.middleware.cache.FetchFromCacheMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    #'django.middleware.sqlprint.SqlPrintingMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
 
     #below is askbot stuff for this tuple
     'askbot.middleware.anon_user.ConnectToSessionMessagesMiddleware',
     'askbot.middleware.forum_mode.ForumModeMiddleware',
     'askbot.middleware.cancel.CancelActionMiddleware',
     'django.middleware.transaction.TransactionMiddleware',
-    #'debug_toolbar.middleware.DebugToolbarMiddleware',
+
     'askbot.middleware.view_log.ViewLogMiddleware',
     'askbot.middleware.spaceless.SpacelessMiddleware',
 )
@@ -121,10 +140,8 @@ ROOT_URLCONF = os.path.basename(os.path.dirname(__file__)) + '.urls'
 
 
 #UPLOAD SETTINGS
-FILE_UPLOAD_TEMP_DIR = os.path.join(
-                                os.path.dirname(__file__),
-                                'tmp'
-                            ).replace('\\','/')
+FILE_UPLOAD_TEMP_DIR = os.path.join(os.path.dirname(__file__),
+                                    'tmp').replace('\\','/')
 
 FILE_UPLOAD_HANDLERS = (
     'django.core.files.uploadhandler.MemoryFileUploadHandler',
@@ -146,6 +163,8 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'askbot.user_messages.context_processors.user_messages',#must be before auth
     'django.core.context_processors.auth', #this is required for admin
     'django.core.context_processors.csrf', #necessary for csrf protection
+    
+    'django.core.context_processors.static',
 )
 
 
@@ -154,6 +173,7 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
+    'django.contrib.messages',
     'django.contrib.staticfiles',
 
     #all of these are needed for the askbot
@@ -191,13 +211,50 @@ AUTHENTICATION_BACKENDS = (
     'askbot.deps.django_authopenid.backends.AuthBackend',
 )
 
-#logging settings
-LOG_FILENAME = 'askbot.log'
-logging.basicConfig(
-    filename=os.path.join(os.path.dirname(__file__), 'log', LOG_FILENAME),
-    level=logging.CRITICAL,
-    format='%(pathname)s TIME: %(asctime)s MSG: %(filename)s:%(funcName)s:%(lineno)d %(message)s',
-)
+# A sample logging configuration. The only tangible logging
+# performed by this configuration is to send an email to
+# the site admins on every HTTP 500 error.
+# See http://docs.djangoproject.com/en/dev/topics/logging for
+# more details on how to customize your logging configuration.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+    },
+    'handlers': {
+        'null': {
+            'level':'DEBUG',
+            'class':'django.utils.log.NullHandler',
+        },
+        'console':{
+            'level':'DEBUG',
+            'class':'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+        }
+    },
+    'loggers': {
+        'refactoring': {
+            'handlers' : ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['mail_admins'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+    }
+}
 
 ###########################
 #
@@ -221,10 +278,9 @@ CELERY_ALWAYS_EAGER = True
 
 import djcelery
 djcelery.setup_loader()
+DOMAIN_NAME = 'askbot'
 
 CSRF_COOKIE_NAME = 'askbot_csrf'
-#enter domain name here - e.g. example.com
-#CSRF_COOKIE_DOMAIN = ''
 
 STATICFILES_DIRS = ( os.path.join(ASKBOT_ROOT, 'skins'),)
 

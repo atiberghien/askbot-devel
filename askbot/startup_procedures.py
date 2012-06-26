@@ -112,9 +112,11 @@ def test_middleware():
     case - raises an AskbotConfigError exception.
     """
     required_middleware = [
-        'django.contrib.sessions.middleware.SessionMiddleware',
         'django.middleware.common.CommonMiddleware',
+        'django.contrib.sessions.middleware.SessionMiddleware',
+        'django.middleware.csrf.CsrfViewMiddleware',
         'django.contrib.auth.middleware.AuthenticationMiddleware',
+        'django.contrib.messages.middleware.MessageMiddleware',
         'askbot.middleware.anon_user.ConnectToSessionMessagesMiddleware',
         'askbot.middleware.forum_mode.ForumModeMiddleware',
         'askbot.middleware.cancel.CancelActionMiddleware',
