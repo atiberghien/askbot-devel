@@ -90,75 +90,75 @@ def get_users_by_text_query(search_query):
     #        models.Q(about__search = search_query)
     #    )
 
-get_profile_model().add_to_class(
-            'status',
-            models.CharField(
-                        max_length = 2,
-                        default = const.DEFAULT_USER_STATUS,
-                        choices = const.USER_STATUS_CHOICES
-                    )
-        )
+#get_profile_model().add_to_class(
+#            'status',
+#            models.CharField(
+#                        max_length = 2,
+#                        default = const.DEFAULT_USER_STATUS,
+#                        choices = const.USER_STATUS_CHOICES
+#                    )
+#        )
 
-get_profile_model().add_to_class('email_isvalid', models.BooleanField(default=False)) #@UndefinedVariable
-get_profile_model().add_to_class('email_key', models.CharField(max_length=32, null=True))
+#get_profile_model().add_to_class('email_isvalid', models.BooleanField(default=False)) #@UndefinedVariable
+#get_profile_model().add_to_class('email_key', models.CharField(max_length=32, null=True))
 #hardcoded initial reputaion of 1, no setting for this one
-get_profile_model().add_to_class('reputation',
-    models.PositiveIntegerField(default=const.MIN_REPUTATION)
-)
-get_profile_model().add_to_class('gravatar', models.CharField(max_length=32))
+#get_profile_model().add_to_class('reputation',
+#    models.PositiveIntegerField(default=const.MIN_REPUTATION)
+#)
+#get_profile_model().add_to_class('gravatar', models.CharField(max_length=32))
 #get_profile_model().add_to_class('has_custom_avatar', models.BooleanField(default=False))
-get_profile_model().add_to_class(
-    'avatar_type',
-    models.CharField(max_length=1,
-        choices=const.AVATAR_STATUS_CHOICE,
-        default='n')
-)
-get_profile_model().add_to_class('gold', models.SmallIntegerField(default=0))
-get_profile_model().add_to_class('silver', models.SmallIntegerField(default=0))
-get_profile_model().add_to_class('bronze', models.SmallIntegerField(default=0))
-get_profile_model().add_to_class(
-    'questions_per_page',  # TODO: remove me and const.QUESTIONS_PER_PAGE_USER_CHOICES, we're no longer used!
-    models.SmallIntegerField(
-        choices=const.QUESTIONS_PER_PAGE_USER_CHOICES,
-        default=10
-    )
-)
-get_profile_model().add_to_class('last_seen',
-                  models.DateTimeField(default=datetime.datetime.now))
-get_profile_model().add_to_class('real_name', models.CharField(max_length=100, blank=True))
-get_profile_model().add_to_class('website', models.URLField(max_length=200, blank=True))
+#get_profile_model().add_to_class(
+#    'avatar_type',
+#    models.CharField(max_length=1,
+#        choices=const.AVATAR_STATUS_CHOICE,
+#        default='n')
+#)
+#get_profile_model().add_to_class('gold', models.SmallIntegerField(default=0))
+#get_profile_model().add_to_class('silver', models.SmallIntegerField(default=0))
+#get_profile_model().add_to_class('bronze', models.SmallIntegerField(default=0))
+#get_profile_model().add_to_class(
+#    'questions_per_page',  # TODO: remove me and const.QUESTIONS_PER_PAGE_USER_CHOICES, we're no longer used!
+#    models.SmallIntegerField(
+#        choices=const.QUESTIONS_PER_PAGE_USER_CHOICES,
+#        default=10
+#    )
+#)
+#get_profile_model().add_to_class('last_seen',
+#                  models.DateTimeField(default=datetime.datetime.now))
+#get_profile_model().add_to_class('real_name', models.CharField(max_length=100, blank=True))
+#get_profile_model().add_to_class('website', models.URLField(max_length=200, blank=True))
 #location field is actually city
-get_profile_model().add_to_class('location', models.CharField(max_length=100, blank=True))
-get_profile_model().add_to_class('country', CountryField(blank = True))
-get_profile_model().add_to_class('show_country', models.BooleanField(default = False))
+#get_profile_model().add_to_class('location', models.CharField(max_length=100, blank=True))
+#get_profile_model().add_to_class('country', CountryField(blank = True))
+#get_profile_model().add_to_class('show_country', models.BooleanField(default = False))
 
-get_profile_model().add_to_class('date_of_birth', models.DateField(null=True, blank=True))
-get_profile_model().add_to_class('about', models.TextField(blank=True))
+#get_profile_model().add_to_class('date_of_birth', models.DateField(null=True, blank=True))
+#get_profile_model().add_to_class('about', models.TextField(blank=True))
 #interesting tags and ignored tags are to store wildcard tag selections only
-get_profile_model().add_to_class('interesting_tags', models.TextField(blank = True))
-get_profile_model().add_to_class('ignored_tags', models.TextField(blank = True))
-get_profile_model().add_to_class('subscribed_tags', models.TextField(blank = True))
-get_profile_model().add_to_class('email_signature', models.TextField(blank = True))
-get_profile_model().add_to_class('show_marked_tags', models.BooleanField(default = True))
+#get_profile_model().add_to_class('interesting_tags', models.TextField(blank = True))
+#get_profile_model().add_to_class('ignored_tags', models.TextField(blank = True))
+#get_profile_model().add_to_class('subscribed_tags', models.TextField(blank = True))
+#get_profile_model().add_to_class('email_signature', models.TextField(blank = True))
+#get_profile_model().add_to_class('show_marked_tags', models.BooleanField(default = True))
 
-get_profile_model().add_to_class(
-    'email_tag_filter_strategy',
-    models.SmallIntegerField(
-        choices=const.TAG_DISPLAY_FILTER_STRATEGY_CHOICES,
-        default=const.EXCLUDE_IGNORED
-    )
-)
-get_profile_model().add_to_class(
-    'display_tag_filter_strategy',
-    models.SmallIntegerField(
-        choices=const.TAG_EMAIL_FILTER_STRATEGY_CHOICES,
-        default=const.INCLUDE_ALL
-    )
-)
+#get_profile_model().add_to_class(
+#    'email_tag_filter_strategy',
+#    models.SmallIntegerField(
+#        choices=const.TAG_DISPLAY_FILTER_STRATEGY_CHOICES,
+#        default=const.EXCLUDE_IGNORED
+#    )
+#)
+#get_profile_model().add_to_class(
+#    'display_tag_filter_strategy',
+#    models.SmallIntegerField(
+#        choices=const.TAG_EMAIL_FILTER_STRATEGY_CHOICES,
+#        default=const.INCLUDE_ALL
+#    )
+#)
 
-get_profile_model().add_to_class('new_response_count', models.IntegerField(default=0))
-get_profile_model().add_to_class('seen_response_count', models.IntegerField(default=0))
-get_profile_model().add_to_class('consecutive_days_visit_count', models.IntegerField(default = 0))
+#get_profile_model().add_to_class('new_response_count', models.IntegerField(default=0))
+#get_profile_model().add_to_class('seen_response_count', models.IntegerField(default=0))
+#get_profile_model().add_to_class('consecutive_days_visit_count', models.IntegerField(default = 0))
 
 GRAVATAR_TEMPLATE = "http://www.gravatar.com/avatar/%(gravatar)s?" + \
     "s=%(size)d&amp;d=%(type)s&amp;r=PG"

@@ -1,7 +1,13 @@
+import datetime
+
 from django.db import models
-from django.conf import settings as django_settings
 from django.db.models import signals as django_signals
+from django.conf import settings as django_settings
 from django.contrib.auth.models import User
+
+from django_countries.fields import CountryField
+
+from askbot import const
 
 ############################################################
 ####################### TEMP ###############################
@@ -75,6 +81,23 @@ class AskbotBaseProfile(models.Model):
     Subclass must have :
         user = models.OneToOneField(User)
     """
+    status = models.CharField(max_length=2, default=const.DEFAULT_USER_STATUS, choices=const.USER_STATUS_CHOICES)
+    reputation = models.PositiveIntegerField(default=const.MIN_REPUTATION)
+    gold = models.SmallIntegerField(default=0)
+    silver = models.SmallIntegerField(default=0)
+    bronze = models.SmallIntegerField(default=0)
+    questions_per_page = models.SmallIntegerField(choices=const.QUESTIONS_PER_PAGE_USER_CHOICES, default=10)
+    last_seen = models.DateTimeField(default=datetime.datetime.now)
+    interesting_tags = models.TextField(blank = True)
+    ignored_tags = models.TextField(blank = True)
+    subscribed_tags = models.TextField(blank = True)
+    show_marked_tags = models.BooleanField(default = True)
+    email_tag_filter_strategy = models.SmallIntegerField(choices=const.TAG_DISPLAY_FILTER_STRATEGY_CHOICES, default=const.EXCLUDE_IGNORED)
+    email_signature = models.TextField(blank = True)
+    display_tag_filter_strategy = models.SmallIntegerField(choices=const.TAG_EMAIL_FILTER_STRATEGY_CHOICES, default=const.INCLUDE_ALL)
+    new_response_count = models.IntegerField(default=0)
+    seen_response_count = models.IntegerField(default=0)
+    consecutive_days_visit_count = models.IntegerField(default=0)
     
     class Meta:
         abstract = True
@@ -84,6 +107,18 @@ class AskbotProfile(AskbotBaseProfile):
     Profile model example
     """
     user = models.OneToOneField(User)
+    
+    email_isvalid = models.BooleanField(default=False)
+    email_key = models.CharField(max_length=32, null=True)
+    gravatar = models.CharField(max_length=32)
+    avatar_type = models.CharField(max_length=1, choices=const.AVATAR_STATUS_CHOICE, default='n')
+    real_name = models.CharField(max_length=100, blank=True)
+    website = models.URLField(max_length=200, blank=True)
+    location = models.CharField(max_length=100, blank=True)
+    country = CountryField(blank = True)
+    show_country = models.BooleanField(default = False)
+    date_of_birth = models.DateField(null=True, blank=True)
+    about = models.TextField(blank=True)
     
     class Meta:
         app_label = 'askbot'
