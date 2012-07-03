@@ -1,4 +1,5 @@
 from askbot import startup_procedures
+from userena.utils import get_profile_model
 startup_procedures.run()
 
 import collections
@@ -45,19 +46,6 @@ from askbot.utils.url_utils import strip_path
 from askbot import mail
 
 from askbot.models.profile import AskbotProfile
-
-def get_profile_model():
-    """"
-    From django-userena
-    """
-    if (not hasattr(django_settings, 'AUTH_PROFILE_MODULE')) or \
-           (not django_settings.AUTH_PROFILE_MODULE):
-        raise SiteProfileNotAvailable
-
-    profile_mod = models.get_model(*django_settings.AUTH_PROFILE_MODULE.split('.'))
-    if profile_mod is None:
-        raise SiteProfileNotAvailable
-    return profile_mod
 
 def get_model(model_name):
     """a shortcut for getting model for an askbot app"""
