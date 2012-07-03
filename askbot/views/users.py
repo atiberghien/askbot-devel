@@ -42,6 +42,7 @@ from askbot.templatetags import extra_tags
 from askbot.search.state_manager import SearchState
 from askbot.utils import url_utils
 from askbot.utils.loading import load_module
+from userena.utils import get_profile_model
 
 def owner_or_moderator_required(f):
     @functools.wraps(f)
@@ -58,7 +59,7 @@ def owner_or_moderator_required(f):
 
 def show_users(request, by_group = False, group_id = None, group_slug = None):
     """Users view, including listing of users by group"""
-    users = models.User.objects.exclude(status = 'b')
+#    users = models.User.objects.exclude(status = 'b')
     group = None
     group_email_moderation_enabled = False
     user_can_join_group = False
@@ -115,25 +116,25 @@ def show_users(request, by_group = False, group_id = None, group_slug = None):
     search_query = request.REQUEST.get('query',  "")
     if search_query == "":
         if sortby == "newest":
-            order_by_parameter = '-date_joined'
+            order_by_parameter = '-user__date_joined'
         elif sortby == "last":
-            order_by_parameter = 'date_joined'
+            order_by_parameter = 'user__date_joined'
         elif sortby == "user":
-            order_by_parameter = 'username'
+            order_by_parameter = 'user__username'
         else:
             # default
             order_by_parameter = '-reputation'
 
         objects_list = Paginator(
-                            models.User.objects.order_by(order_by_parameter),
+                            get_profile_model().objects.order_by(order_by_parameter),
                             const.USERS_PAGE_SIZE
                         )
         base_url = request.path + '?sort=%s&amp;' % sortby
     else:
         sortby = "reputation"
-        matching_users = models.get_users_by_text_query(search_query)
+        matching_profile = get_profile_model().objects.filter(models.Q(user__username__icontains=search_query) | models.Q(about__icontains=search_query))
         objects_list = Paginator(
-                            matching_users.order_by('-reputation'),
+                            matching_profile.order_by('-reputation'),
                             const.USERS_PAGE_SIZE
                         )
         base_url = request.path + '?name=%s&amp;sort=%s&amp;' % (search_query, sortby)

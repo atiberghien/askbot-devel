@@ -23,6 +23,7 @@ from askbot.utils import mysql
 from askbot.utils.slug import slugify
 from askbot.skins.loaders import get_template #jinja2 template loading enviroment
 from askbot.search.state_manager import DummySearchState
+from userena.utils import get_profile_model
 
 
 class ThreadManager(models.Manager):
@@ -325,8 +326,9 @@ class ThreadManager(models.Manager):
         for thread in threads:
             thread._question_cache = page_question_map[thread.id]
 
-        last_activity_by_users = User.objects.filter(id__in=[obj.last_activity_by_id for obj in threads])\
-                                    .only('id', 'username', 'country', 'show_country')
+        last_activity_by_users = get_profile_model().objects.filter(user__id__in=[obj.last_activity_by_id for obj in threads])
+        last_activity_by_users = last_activity_by_users.only('user__id', 'user__username', 'country', 'show_country')
+        
         user_map = {}
         for la_user in last_activity_by_users:
             user_map[la_user.id] = la_user
@@ -347,7 +349,7 @@ class ThreadManager(models.Manager):
         #a real image and try to prompt him/her to upload a picture
         from askbot.conf import settings as askbot_settings
         avatar_limit = askbot_settings.SIDEBAR_MAIN_AVATAR_LIMIT
-        contributors = User.objects.filter(id__in=u_id).order_by('avatar_type', '?')[:avatar_limit]
+        contributors = get_profile_model().objects.filter(user__id__in=u_id).order_by('avatar_type', '?')[:avatar_limit]
         return contributors
 
     def get_for_user(self, user):

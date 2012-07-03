@@ -99,7 +99,7 @@ def questions(request, **kwargs):
     if tag_list_type == 'cloud': #force cloud to sort by name
         related_tags = sorted(related_tags, key = operator.attrgetter('name'))
 
-    contributors = list(models.Thread.objects.get_thread_contributors(thread_list=page.object_list).only('id', 'username', 'gravatar'))
+    contributors = list(models.Thread.objects.get_thread_contributors(thread_list=page.object_list).only('user__id', 'user__username', 'gravatar'))
 
     paginator_context = {
         'is_paginated' : (paginator.count > page_size),
