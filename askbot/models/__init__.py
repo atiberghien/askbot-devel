@@ -11,7 +11,7 @@ from django.db.models import signals as django_signals
 from django.template import Context
 from django.utils.translation import ugettext as _
 from django.utils.translation import ungettext
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, SiteProfileNotAvailable
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.db import models
@@ -44,6 +44,21 @@ from askbot.utils.diff import textDiff as htmldiff
 from askbot.utils.url_utils import strip_path
 from askbot import mail
 
+from askbot.models.profile import AskbotProfile
+
+def get_profile_model():
+    """"
+    From django-userena
+    """
+    if (not hasattr(django_settings, 'AUTH_PROFILE_MODULE')) or \
+           (not django_settings.AUTH_PROFILE_MODULE):
+        raise SiteProfileNotAvailable
+
+    profile_mod = models.get_model(*django_settings.AUTH_PROFILE_MODULE.split('.'))
+    if profile_mod is None:
+        raise SiteProfileNotAvailable
+    return profile_mod
+
 def get_model(model_name):
     """a shortcut for getting model for an askbot app"""
     return models.get_model('askbot', model_name)
@@ -75,7 +90,7 @@ def get_users_by_text_query(search_query):
     #        models.Q(about__search = search_query)
     #    )
 
-User.add_to_class(
+get_profile_model().add_to_class(
             'status',
             models.CharField(
                         max_length = 2,
@@ -84,56 +99,56 @@ User.add_to_class(
                     )
         )
 
-User.add_to_class('email_isvalid', models.BooleanField(default=False)) #@UndefinedVariable
-User.add_to_class('email_key', models.CharField(max_length=32, null=True))
+get_profile_model().add_to_class('email_isvalid', models.BooleanField(default=False)) #@UndefinedVariable
+get_profile_model().add_to_class('email_key', models.CharField(max_length=32, null=True))
 #hardcoded initial reputaion of 1, no setting for this one
-User.add_to_class('reputation',
+get_profile_model().add_to_class('reputation',
     models.PositiveIntegerField(default=const.MIN_REPUTATION)
 )
-User.add_to_class('gravatar', models.CharField(max_length=32))
-#User.add_to_class('has_custom_avatar', models.BooleanField(default=False))
-User.add_to_class(
+get_profile_model().add_to_class('gravatar', models.CharField(max_length=32))
+#get_profile_model().add_to_class('has_custom_avatar', models.BooleanField(default=False))
+get_profile_model().add_to_class(
     'avatar_type',
     models.CharField(max_length=1,
         choices=const.AVATAR_STATUS_CHOICE,
         default='n')
 )
-User.add_to_class('gold', models.SmallIntegerField(default=0))
-User.add_to_class('silver', models.SmallIntegerField(default=0))
-User.add_to_class('bronze', models.SmallIntegerField(default=0))
-User.add_to_class(
+get_profile_model().add_to_class('gold', models.SmallIntegerField(default=0))
+get_profile_model().add_to_class('silver', models.SmallIntegerField(default=0))
+get_profile_model().add_to_class('bronze', models.SmallIntegerField(default=0))
+get_profile_model().add_to_class(
     'questions_per_page',  # TODO: remove me and const.QUESTIONS_PER_PAGE_USER_CHOICES, we're no longer used!
     models.SmallIntegerField(
         choices=const.QUESTIONS_PER_PAGE_USER_CHOICES,
         default=10
     )
 )
-User.add_to_class('last_seen',
+get_profile_model().add_to_class('last_seen',
                   models.DateTimeField(default=datetime.datetime.now))
-User.add_to_class('real_name', models.CharField(max_length=100, blank=True))
-User.add_to_class('website', models.URLField(max_length=200, blank=True))
+get_profile_model().add_to_class('real_name', models.CharField(max_length=100, blank=True))
+get_profile_model().add_to_class('website', models.URLField(max_length=200, blank=True))
 #location field is actually city
-User.add_to_class('location', models.CharField(max_length=100, blank=True))
-User.add_to_class('country', CountryField(blank = True))
-User.add_to_class('show_country', models.BooleanField(default = False))
+get_profile_model().add_to_class('location', models.CharField(max_length=100, blank=True))
+get_profile_model().add_to_class('country', CountryField(blank = True))
+get_profile_model().add_to_class('show_country', models.BooleanField(default = False))
 
-User.add_to_class('date_of_birth', models.DateField(null=True, blank=True))
-User.add_to_class('about', models.TextField(blank=True))
+get_profile_model().add_to_class('date_of_birth', models.DateField(null=True, blank=True))
+get_profile_model().add_to_class('about', models.TextField(blank=True))
 #interesting tags and ignored tags are to store wildcard tag selections only
-User.add_to_class('interesting_tags', models.TextField(blank = True))
-User.add_to_class('ignored_tags', models.TextField(blank = True))
-User.add_to_class('subscribed_tags', models.TextField(blank = True))
-User.add_to_class('email_signature', models.TextField(blank = True))
-User.add_to_class('show_marked_tags', models.BooleanField(default = True))
+get_profile_model().add_to_class('interesting_tags', models.TextField(blank = True))
+get_profile_model().add_to_class('ignored_tags', models.TextField(blank = True))
+get_profile_model().add_to_class('subscribed_tags', models.TextField(blank = True))
+get_profile_model().add_to_class('email_signature', models.TextField(blank = True))
+get_profile_model().add_to_class('show_marked_tags', models.BooleanField(default = True))
 
-User.add_to_class(
+get_profile_model().add_to_class(
     'email_tag_filter_strategy',
     models.SmallIntegerField(
         choices=const.TAG_DISPLAY_FILTER_STRATEGY_CHOICES,
         default=const.EXCLUDE_IGNORED
     )
 )
-User.add_to_class(
+get_profile_model().add_to_class(
     'display_tag_filter_strategy',
     models.SmallIntegerField(
         choices=const.TAG_EMAIL_FILTER_STRATEGY_CHOICES,
@@ -141,9 +156,9 @@ User.add_to_class(
     )
 )
 
-User.add_to_class('new_response_count', models.IntegerField(default=0))
-User.add_to_class('seen_response_count', models.IntegerField(default=0))
-User.add_to_class('consecutive_days_visit_count', models.IntegerField(default = 0))
+get_profile_model().add_to_class('new_response_count', models.IntegerField(default=0))
+get_profile_model().add_to_class('seen_response_count', models.IntegerField(default=0))
+get_profile_model().add_to_class('consecutive_days_visit_count', models.IntegerField(default = 0))
 
 GRAVATAR_TEMPLATE = "http://www.gravatar.com/avatar/%(gravatar)s?" + \
     "s=%(size)d&amp;d=%(type)s&amp;r=PG"
@@ -2496,139 +2511,139 @@ def user_edit_group_membership(self, user = None, group = None, action = None):
 def user_is_group_member(self, group = None):
     return self.group_memberships.filter(group = group).count() == 1
 
-User.add_to_class(
+get_profile_model().add_to_class(
     'add_missing_askbot_subscriptions',
     user_add_missing_askbot_subscriptions
 )
-User.add_to_class(
+get_profile_model().add_to_class(
     'is_username_taken',
     classmethod(user_is_username_taken)
 )
-User.add_to_class(
+get_profile_model().add_to_class(
     'get_followed_question_alert_frequency',
     user_get_followed_question_alert_frequency
 )
-User.add_to_class(
+get_profile_model().add_to_class(
     'subscribe_for_followed_question_alerts',
     user_subscribe_for_followed_question_alerts
 )
-User.add_to_class('get_absolute_url', user_get_absolute_url)
-User.add_to_class('get_avatar_url', user_get_avatar_url)
-User.add_to_class('get_default_avatar_url', user_get_default_avatar_url)
-User.add_to_class('get_gravatar_url', user_get_gravatar_url)
-User.add_to_class('get_marked_tags', user_get_marked_tags)
-User.add_to_class('get_marked_tag_names', user_get_marked_tag_names)
-User.add_to_class('strip_email_signature', user_strip_email_signature)
-User.add_to_class('get_groups_membership_info', user_get_groups_membership_info)
-User.add_to_class('get_anonymous_name', user_get_anonymous_name)
-User.add_to_class('update_avatar_type', user_update_avatar_type)
-User.add_to_class('post_question', user_post_question)
-User.add_to_class('edit_question', user_edit_question)
-User.add_to_class('retag_question', user_retag_question)
-User.add_to_class('post_answer', user_post_answer)
-User.add_to_class('edit_answer', user_edit_answer)
-User.add_to_class('edit_post', user_edit_post)
-User.add_to_class(
+get_profile_model().add_to_class('get_absolute_url', user_get_absolute_url)
+get_profile_model().add_to_class('get_avatar_url', user_get_avatar_url)
+get_profile_model().add_to_class('get_default_avatar_url', user_get_default_avatar_url)
+get_profile_model().add_to_class('get_gravatar_url', user_get_gravatar_url)
+get_profile_model().add_to_class('get_marked_tags', user_get_marked_tags)
+get_profile_model().add_to_class('get_marked_tag_names', user_get_marked_tag_names)
+get_profile_model().add_to_class('strip_email_signature', user_strip_email_signature)
+get_profile_model().add_to_class('get_groups_membership_info', user_get_groups_membership_info)
+get_profile_model().add_to_class('get_anonymous_name', user_get_anonymous_name)
+get_profile_model().add_to_class('update_avatar_type', user_update_avatar_type)
+get_profile_model().add_to_class('post_question', user_post_question)
+get_profile_model().add_to_class('edit_question', user_edit_question)
+get_profile_model().add_to_class('retag_question', user_retag_question)
+get_profile_model().add_to_class('post_answer', user_post_answer)
+get_profile_model().add_to_class('edit_answer', user_edit_answer)
+get_profile_model().add_to_class('edit_post', user_edit_post)
+get_profile_model().add_to_class(
     'post_anonymous_askbot_content',
     user_post_anonymous_askbot_content
 )
-User.add_to_class('post_comment', user_post_comment)
-User.add_to_class('edit_comment', user_edit_comment)
-User.add_to_class('create_post_reject_reason', user_create_post_reject_reason)
-User.add_to_class('edit_post_reject_reason', user_edit_post_reject_reason)
-User.add_to_class('delete_post', user_delete_post)
-User.add_to_class('post_tag_wiki', user_post_tag_wiki)
-User.add_to_class('visit_question', user_visit_question)
-User.add_to_class('upvote', upvote)
-User.add_to_class('downvote', downvote)
-User.add_to_class('flag_post', flag_post)
-User.add_to_class('receive_reputation', user_receive_reputation)
-User.add_to_class('get_flags', user_get_flags)
-User.add_to_class(
+get_profile_model().add_to_class('post_comment', user_post_comment)
+get_profile_model().add_to_class('edit_comment', user_edit_comment)
+get_profile_model().add_to_class('create_post_reject_reason', user_create_post_reject_reason)
+get_profile_model().add_to_class('edit_post_reject_reason', user_edit_post_reject_reason)
+get_profile_model().add_to_class('delete_post', user_delete_post)
+get_profile_model().add_to_class('post_tag_wiki', user_post_tag_wiki)
+get_profile_model().add_to_class('visit_question', user_visit_question)
+get_profile_model().add_to_class('upvote', upvote)
+get_profile_model().add_to_class('downvote', downvote)
+get_profile_model().add_to_class('flag_post', flag_post)
+get_profile_model().add_to_class('receive_reputation', user_receive_reputation)
+get_profile_model().add_to_class('get_flags', user_get_flags)
+get_profile_model().add_to_class(
     'get_flag_count_posted_today',
     user_get_flag_count_posted_today
 )
-User.add_to_class('get_flags_for_post', user_get_flags_for_post)
-User.add_to_class('get_profile_url', get_profile_url)
-User.add_to_class('get_profile_link', get_profile_link)
-User.add_to_class('get_tag_filtered_questions', user_get_tag_filtered_questions)
-User.add_to_class('get_messages', get_messages)
-User.add_to_class('delete_messages', delete_messages)
-User.add_to_class('toggle_favorite_question', toggle_favorite_question)
-User.add_to_class('follow_question', user_follow_question)
-User.add_to_class('unfollow_question', user_unfollow_question)
-User.add_to_class('is_following_question', user_is_following_question)
-User.add_to_class('mark_tags', user_mark_tags)
-User.add_to_class('update_response_counts', user_update_response_counts)
-User.add_to_class('can_have_strong_url', user_can_have_strong_url)
-User.add_to_class('can_post_by_email', user_can_post_by_email)
-User.add_to_class('can_post_comment', user_can_post_comment)
-User.add_to_class('is_administrator', user_is_administrator)
-User.add_to_class('is_administrator_or_moderator', user_is_administrator_or_moderator)
-User.add_to_class('set_admin_status', user_set_admin_status)
-User.add_to_class('edit_group_membership', user_edit_group_membership)
-User.add_to_class('is_group_member', user_is_group_member)
-User.add_to_class('remove_admin_status', user_remove_admin_status)
-User.add_to_class('is_moderator', user_is_moderator)
-User.add_to_class('is_approved', user_is_approved)
-User.add_to_class('is_watched', user_is_watched)
-User.add_to_class('is_suspended', user_is_suspended)
-User.add_to_class('is_blocked', user_is_blocked)
-User.add_to_class('is_owner_of', user_is_owner_of)
-User.add_to_class('has_interesting_wildcard_tags', user_has_interesting_wildcard_tags)
-User.add_to_class('has_ignored_wildcard_tags', user_has_ignored_wildcard_tags)
-User.add_to_class('can_moderate_user', user_can_moderate_user)
-User.add_to_class('has_affinity_to_question', user_has_affinity_to_question)
-User.add_to_class('moderate_user_reputation', user_moderate_user_reputation)
-User.add_to_class('set_status', user_set_status)
-User.add_to_class('get_status_display', user_get_status_display)
-User.add_to_class('get_old_vote_for_post', user_get_old_vote_for_post)
-User.add_to_class('get_unused_votes_today', user_get_unused_votes_today)
-User.add_to_class('delete_comment', user_delete_comment)
-User.add_to_class('delete_question', user_delete_question)
-User.add_to_class('delete_answer', user_delete_answer)
-User.add_to_class('restore_post', user_restore_post)
-User.add_to_class('close_question', user_close_question)
-User.add_to_class('reopen_question', user_reopen_question)
-User.add_to_class('accept_best_answer', user_accept_best_answer)
-User.add_to_class('unaccept_best_answer', user_unaccept_best_answer)
-User.add_to_class(
+get_profile_model().add_to_class('get_flags_for_post', user_get_flags_for_post)
+get_profile_model().add_to_class('get_profile_url', get_profile_url)
+get_profile_model().add_to_class('get_profile_link', get_profile_link)
+get_profile_model().add_to_class('get_tag_filtered_questions', user_get_tag_filtered_questions)
+get_profile_model().add_to_class('get_messages', get_messages)
+get_profile_model().add_to_class('delete_messages', delete_messages)
+get_profile_model().add_to_class('toggle_favorite_question', toggle_favorite_question)
+get_profile_model().add_to_class('follow_question', user_follow_question)
+get_profile_model().add_to_class('unfollow_question', user_unfollow_question)
+get_profile_model().add_to_class('is_following_question', user_is_following_question)
+get_profile_model().add_to_class('mark_tags', user_mark_tags)
+get_profile_model().add_to_class('update_response_counts', user_update_response_counts)
+get_profile_model().add_to_class('can_have_strong_url', user_can_have_strong_url)
+get_profile_model().add_to_class('can_post_by_email', user_can_post_by_email)
+get_profile_model().add_to_class('can_post_comment', user_can_post_comment)
+get_profile_model().add_to_class('is_administrator', user_is_administrator)
+get_profile_model().add_to_class('is_administrator_or_moderator', user_is_administrator_or_moderator)
+get_profile_model().add_to_class('set_admin_status', user_set_admin_status)
+get_profile_model().add_to_class('edit_group_membership', user_edit_group_membership)
+get_profile_model().add_to_class('is_group_member', user_is_group_member)
+get_profile_model().add_to_class('remove_admin_status', user_remove_admin_status)
+get_profile_model().add_to_class('is_moderator', user_is_moderator)
+get_profile_model().add_to_class('is_approved', user_is_approved)
+get_profile_model().add_to_class('is_watched', user_is_watched)
+get_profile_model().add_to_class('is_suspended', user_is_suspended)
+get_profile_model().add_to_class('is_blocked', user_is_blocked)
+get_profile_model().add_to_class('is_owner_of', user_is_owner_of)
+get_profile_model().add_to_class('has_interesting_wildcard_tags', user_has_interesting_wildcard_tags)
+get_profile_model().add_to_class('has_ignored_wildcard_tags', user_has_ignored_wildcard_tags)
+get_profile_model().add_to_class('can_moderate_user', user_can_moderate_user)
+get_profile_model().add_to_class('has_affinity_to_question', user_has_affinity_to_question)
+get_profile_model().add_to_class('moderate_user_reputation', user_moderate_user_reputation)
+get_profile_model().add_to_class('set_status', user_set_status)
+get_profile_model().add_to_class('get_status_display', user_get_status_display)
+get_profile_model().add_to_class('get_old_vote_for_post', user_get_old_vote_for_post)
+get_profile_model().add_to_class('get_unused_votes_today', user_get_unused_votes_today)
+get_profile_model().add_to_class('delete_comment', user_delete_comment)
+get_profile_model().add_to_class('delete_question', user_delete_question)
+get_profile_model().add_to_class('delete_answer', user_delete_answer)
+get_profile_model().add_to_class('restore_post', user_restore_post)
+get_profile_model().add_to_class('close_question', user_close_question)
+get_profile_model().add_to_class('reopen_question', user_reopen_question)
+get_profile_model().add_to_class('accept_best_answer', user_accept_best_answer)
+get_profile_model().add_to_class('unaccept_best_answer', user_unaccept_best_answer)
+get_profile_model().add_to_class(
     'update_wildcard_tag_selections',
     user_update_wildcard_tag_selections
 )
-User.add_to_class('approve_post_revision', user_approve_post_revision)
+get_profile_model().add_to_class('approve_post_revision', user_approve_post_revision)
 
 #assertions
-User.add_to_class('assert_can_vote_for_post', user_assert_can_vote_for_post)
-User.add_to_class('assert_can_revoke_old_vote', user_assert_can_revoke_old_vote)
-User.add_to_class('assert_can_upload_file', user_assert_can_upload_file)
-User.add_to_class('assert_can_post_question', user_assert_can_post_question)
-User.add_to_class('assert_can_post_answer', user_assert_can_post_answer)
-User.add_to_class('assert_can_post_comment', user_assert_can_post_comment)
-User.add_to_class('assert_can_edit_post', user_assert_can_edit_post)
-User.add_to_class('assert_can_edit_deleted_post', user_assert_can_edit_deleted_post)
-User.add_to_class('assert_can_see_deleted_post', user_assert_can_see_deleted_post)
-User.add_to_class('assert_can_edit_question', user_assert_can_edit_question)
-User.add_to_class('assert_can_edit_answer', user_assert_can_edit_answer)
-User.add_to_class('assert_can_close_question', user_assert_can_close_question)
-User.add_to_class('assert_can_reopen_question', user_assert_can_reopen_question)
-User.add_to_class('assert_can_flag_offensive', user_assert_can_flag_offensive)
-User.add_to_class('assert_can_remove_flag_offensive', user_assert_can_remove_flag_offensive)
-User.add_to_class('assert_can_remove_all_flags_offensive', user_assert_can_remove_all_flags_offensive)
-User.add_to_class('assert_can_retag_question', user_assert_can_retag_question)
+get_profile_model().add_to_class('assert_can_vote_for_post', user_assert_can_vote_for_post)
+get_profile_model().add_to_class('assert_can_revoke_old_vote', user_assert_can_revoke_old_vote)
+get_profile_model().add_to_class('assert_can_upload_file', user_assert_can_upload_file)
+get_profile_model().add_to_class('assert_can_post_question', user_assert_can_post_question)
+get_profile_model().add_to_class('assert_can_post_answer', user_assert_can_post_answer)
+get_profile_model().add_to_class('assert_can_post_comment', user_assert_can_post_comment)
+get_profile_model().add_to_class('assert_can_edit_post', user_assert_can_edit_post)
+get_profile_model().add_to_class('assert_can_edit_deleted_post', user_assert_can_edit_deleted_post)
+get_profile_model().add_to_class('assert_can_see_deleted_post', user_assert_can_see_deleted_post)
+get_profile_model().add_to_class('assert_can_edit_question', user_assert_can_edit_question)
+get_profile_model().add_to_class('assert_can_edit_answer', user_assert_can_edit_answer)
+get_profile_model().add_to_class('assert_can_close_question', user_assert_can_close_question)
+get_profile_model().add_to_class('assert_can_reopen_question', user_assert_can_reopen_question)
+get_profile_model().add_to_class('assert_can_flag_offensive', user_assert_can_flag_offensive)
+get_profile_model().add_to_class('assert_can_remove_flag_offensive', user_assert_can_remove_flag_offensive)
+get_profile_model().add_to_class('assert_can_remove_all_flags_offensive', user_assert_can_remove_all_flags_offensive)
+get_profile_model().add_to_class('assert_can_retag_question', user_assert_can_retag_question)
 #todo: do we need assert_can_delete_post
-User.add_to_class('assert_can_delete_post', user_assert_can_delete_post)
-User.add_to_class('assert_can_restore_post', user_assert_can_restore_post)
-User.add_to_class('assert_can_delete_comment', user_assert_can_delete_comment)
-User.add_to_class('assert_can_edit_comment', user_assert_can_edit_comment)
-User.add_to_class('assert_can_delete_answer', user_assert_can_delete_answer)
-User.add_to_class('assert_can_delete_question', user_assert_can_delete_question)
-User.add_to_class('assert_can_accept_best_answer', user_assert_can_accept_best_answer)
-User.add_to_class(
+get_profile_model().add_to_class('assert_can_delete_post', user_assert_can_delete_post)
+get_profile_model().add_to_class('assert_can_restore_post', user_assert_can_restore_post)
+get_profile_model().add_to_class('assert_can_delete_comment', user_assert_can_delete_comment)
+get_profile_model().add_to_class('assert_can_edit_comment', user_assert_can_edit_comment)
+get_profile_model().add_to_class('assert_can_delete_answer', user_assert_can_delete_answer)
+get_profile_model().add_to_class('assert_can_delete_question', user_assert_can_delete_question)
+get_profile_model().add_to_class('assert_can_accept_best_answer', user_assert_can_accept_best_answer)
+get_profile_model().add_to_class(
     'assert_can_unaccept_best_answer',
     user_assert_can_unaccept_best_answer
 )
-User.add_to_class(
+get_profile_model().add_to_class(
     'assert_can_approve_post_revision',
     user_assert_can_approve_post_revision
 )
@@ -3017,7 +3032,8 @@ def record_user_visit(user, timestamp, **kwargs):
             timestamp = timestamp
         )
     #somehow it saves on the query as compared to user.save()
-    User.objects.filter(id = user.id).update(last_seen = timestamp)
+#    User.objects.filter(id = user.id).update(last_seen = timestamp)
+    user.save()
 
 
 def record_vote(instance, created, **kwargs):
@@ -3340,6 +3356,7 @@ __all__ = [
         'GroupProfile',
 
         'User',
+        'AskbotProfile',
 
         'ReplyAddress',
 

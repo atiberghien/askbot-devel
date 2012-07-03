@@ -1,5 +1,7 @@
 from django.contrib.auth.management.commands.createsuperuser import *
 from django.db.models.signals import pre_save, post_save
+from django.conf import settings as django_settings
+from askbot.models import get_profile_model
 
 class Command(Command):
 
@@ -100,11 +102,14 @@ class Command(Command):
 
         self.remove_signals()
         u = User.objects.create_superuser(username, email, password)
+        if hasattr(django_settings, 'AUTH_PROFILE_MODULE') and get_profile_model() != User:
+            get_profile_model().objects.create(user=u)
+        
         u.set_admin_status()
         u.save()
 
         if verbosity >= 1:
-          self.stdout.write("Askbot Superuser created successfully.\n")
+            self.stdout.write("Askbot Superuser created successfully.\n")
 
 
     def remove_signals(self):
