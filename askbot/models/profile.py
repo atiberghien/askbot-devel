@@ -68,7 +68,18 @@ if django_settings.AUTH_PROFILE_MODULE != "auth.User":
 ##################### END TEMP #############################
 ############################################################
 
-class AskbotProfile(models.Model):
+class AskbotBaseProfile(models.Model):
+    """
+    Abstract model that encapsulate Askbot specific stuff.
+
+    Subclass must have :
+        user = models.OneToOneField(User)
+    """
+    
+    class Meta:
+        abstract = True
+
+class AskbotProfile(AskbotBaseProfile):
     """
     Profile model example
     """
