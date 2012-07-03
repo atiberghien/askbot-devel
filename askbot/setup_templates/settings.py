@@ -193,6 +193,8 @@ INSTALLED_APPS = (
     'djkombu',
     'followit',
     #'avatar',#experimental use git clone git://github.com/ericflo/django-avatar.git$
+
+    'django_extensions'
 )
 
 
@@ -218,20 +220,13 @@ AUTHENTICATION_BACKENDS = (
 # more details on how to customize your logging configuration.
 LOGGING = {
     'version': 1,
-    'disable_existing_loggers': False,
+    'disable_existing_loggers': True,
     'formatters': {
-        'verbose': {
-            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
-        },
         'simple': {
-            'format': '%(levelname)s %(message)s'
+            'format': '%(levelname)s %(asctime)s %(message)s'
         },
     },
     'handlers': {
-        'null': {
-            'level':'DEBUG',
-            'class':'django.utils.log.NullHandler',
-        },
         'console':{
             'level':'DEBUG',
             'class':'logging.StreamHandler',
@@ -285,3 +280,5 @@ CSRF_COOKIE_NAME = 'askbot_csrf'
 STATICFILES_DIRS = ( os.path.join(ASKBOT_ROOT, 'skins'),)
 
 RECAPTCHA_USE_SSL = True
+
+AUTH_PROFILE_MODULE = 'askbot.AskbotProfile'
