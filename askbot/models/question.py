@@ -349,7 +349,7 @@ class ThreadManager(models.Manager):
         #a real image and try to prompt him/her to upload a picture
         from askbot.conf import settings as askbot_settings
         avatar_limit = askbot_settings.SIDEBAR_MAIN_AVATAR_LIMIT
-        contributors = get_profile_model().objects.filter(user__id__in=u_id).order_by('avatar_type', '?')[:avatar_limit]
+        contributors = get_profile_model().objects.filter(user__id__in=u_id)[:avatar_limit]#.order_by('avatar_type', '?')[:avatar_limit]
         return contributors
 
     def get_for_user(self, user):

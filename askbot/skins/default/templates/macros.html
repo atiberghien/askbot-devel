@@ -606,7 +606,7 @@ answer {% if answer.accepted() %}accepted-answer{% endif %} {% if answer.author_
     href="{{ user.get_absolute_url() }}"
 ><img class="gravatar" 
     width="{{size}}" height="{{size}}"
-    src="{{ user.get_avatar_url(size) }}"
+    src="{{ user.get_mugshot_url() }}"
     title="{{user.username|escape}}" 
     alt="{% trans username=user.username|escape %}{{username}} gravatar image{% endtrans %}" 
 /></a>

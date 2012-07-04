@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django_countries.fields import CountryField
 
 from askbot import const
+from userena.models import UserenaBaseProfile, UserenaLanguageBaseProfile
 
 ############################################################
 ####################### TEMP ###############################
@@ -102,16 +103,16 @@ class AskbotBaseProfile(models.Model):
     class Meta:
         abstract = True
 
-class AskbotProfile(AskbotBaseProfile):
+class AskbotProfile(AskbotBaseProfile, UserenaLanguageBaseProfile):
     """
     Profile model example
     """
     user = models.OneToOneField(User)
     
-    email_isvalid = models.BooleanField(default=False)
-    email_key = models.CharField(max_length=32, null=True)
-    gravatar = models.CharField(max_length=32)
-    avatar_type = models.CharField(max_length=1, choices=const.AVATAR_STATUS_CHOICE, default='n')
+#    email_isvalid = models.BooleanField(default=False)
+#    email_key = models.CharField(max_length=32, null=True)
+#    gravatar = models.CharField(max_length=32)
+#    avatar_type = models.CharField(max_length=1, choices=const.AVATAR_STATUS_CHOICE, default='n')
     real_name = models.CharField(max_length=100, blank=True)
     website = models.URLField(max_length=200, blank=True)
     location = models.CharField(max_length=100, blank=True)

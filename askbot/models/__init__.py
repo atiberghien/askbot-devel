@@ -148,69 +148,69 @@ def get_users_by_text_query(search_query):
 #get_profile_model().add_to_class('seen_response_count', models.IntegerField(default=0))
 #get_profile_model().add_to_class('consecutive_days_visit_count', models.IntegerField(default = 0))
 
-GRAVATAR_TEMPLATE = "http://www.gravatar.com/avatar/%(gravatar)s?" + \
-    "s=%(size)d&amp;d=%(type)s&amp;r=PG"
+#GRAVATAR_TEMPLATE = "http://www.gravatar.com/avatar/%(gravatar)s?" + \
+#    "s=%(size)d&amp;d=%(type)s&amp;r=PG"
+#
+#def user_get_gravatar_url(self, size):
+#    """returns gravatar url
+#    """
+#    return GRAVATAR_TEMPLATE % {
+#                'gravatar': self.gravatar,
+#                'type': askbot_settings.GRAVATAR_TYPE,
+#                'size': size,
+#            }
 
-def user_get_gravatar_url(self, size):
-    """returns gravatar url
-    """
-    return GRAVATAR_TEMPLATE % {
-                'gravatar': self.gravatar,
-                'type': askbot_settings.GRAVATAR_TYPE,
-                'size': size,
-            }
+#def user_get_default_avatar_url(self, size):
+#    """returns default avatar url
+#    """
+#    return skin_utils.get_media_url(askbot_settings.DEFAULT_AVATAR_URL)
 
-def user_get_default_avatar_url(self, size):
-    """returns default avatar url
-    """
-    return skin_utils.get_media_url(askbot_settings.DEFAULT_AVATAR_URL)
+#def user_get_avatar_url(self, size):
+#    """returns avatar url - by default - gravatar,
+#    but if application django-avatar is installed
+#    it will use avatar provided through that app
+#    """
+#    if 'avatar' in django_settings.INSTALLED_APPS:
+#        if self.avatar_type == 'n':
+#            import avatar
+#            if askbot_settings.ENABLE_GRAVATAR: #avatar.settings.AVATAR_GRAVATAR_BACKUP:
+#                return self.get_gravatar_url(size)
+#            else:
+#                return self.get_default_avatar_url(size)
+#        elif self.avatar_type == 'a':
+#            kwargs = {'user_id': self.id, 'size': size}
+#            try:
+#                return reverse('avatar_render_primary', kwargs = kwargs)
+#            except NoReverseMatch:
+#                message = 'Please, make sure that avatar urls are in the urls.py '\
+#                          'or update your django-avatar app, '\
+#                          'currently it is impossible to serve avatars.'
+#                logging.critical(message)
+#                raise django_exceptions.ImproperlyConfigured(message)
+#        else:
+#            return self.get_gravatar_url(size)
+#    else:
+#        if askbot_settings.ENABLE_GRAVATAR:
+#            return self.get_gravatar_url(size)
+#        else:
+#            return self.get_default_avatar_url(size)
 
-def user_get_avatar_url(self, size):
-    """returns avatar url - by default - gravatar,
-    but if application django-avatar is installed
-    it will use avatar provided through that app
-    """
-    if 'avatar' in django_settings.INSTALLED_APPS:
-        if self.avatar_type == 'n':
-            import avatar
-            if askbot_settings.ENABLE_GRAVATAR: #avatar.settings.AVATAR_GRAVATAR_BACKUP:
-                return self.get_gravatar_url(size)
-            else:
-                return self.get_default_avatar_url(size)
-        elif self.avatar_type == 'a':
-            kwargs = {'user_id': self.id, 'size': size}
-            try:
-                return reverse('avatar_render_primary', kwargs = kwargs)
-            except NoReverseMatch:
-                message = 'Please, make sure that avatar urls are in the urls.py '\
-                          'or update your django-avatar app, '\
-                          'currently it is impossible to serve avatars.'
-                logging.critical(message)
-                raise django_exceptions.ImproperlyConfigured(message)
-        else:
-            return self.get_gravatar_url(size)
-    else:
-        if askbot_settings.ENABLE_GRAVATAR:
-            return self.get_gravatar_url(size)
-        else:
-            return self.get_default_avatar_url(size)
-
-def user_update_avatar_type(self):
-    """counts number of custom avatars
-    and if zero, sets avatar_type to False,
-    True otherwise. The method is called only if
-    avatar application is installed.
-    Saves the object.
-    """
-
-    if 'avatar' in django_settings.INSTALLED_APPS:
-        if self.avatar_set.count() > 0:
-            self.avatar_type = 'a'
-        else:
-            self.avatar_type = _check_gravatar(self.gravatar)
-    else:
-            self.avatar_type = _check_gravatar(self.gravatar)
-    self.save()
+#def user_update_avatar_type(self):
+#    """counts number of custom avatars
+#    and if zero, sets avatar_type to False,
+#    True otherwise. The method is called only if
+#    avatar application is installed.
+#    Saves the object.
+#    """
+#
+#    if 'avatar' in django_settings.INSTALLED_APPS:
+#        if self.avatar_set.count() > 0:
+#            self.avatar_type = 'a'
+#        else:
+#            self.avatar_type = _check_gravatar(self.gravatar)
+#    else:
+#            self.avatar_type = _check_gravatar(self.gravatar)
+#    self.save()
 
 def user_strip_email_signature(self, text):
     """strips email signature from the end of the text"""
@@ -222,13 +222,13 @@ def user_strip_email_signature(self, text):
         text = text[0:-len(self.email_signature)]
     return text
 
-def _check_gravatar(gravatar):
-    gravatar_url = "http://www.gravatar.com/avatar/%s?d=404" % gravatar
-    code = urllib.urlopen(gravatar_url).getcode()
-    if urllib.urlopen(gravatar_url).getcode() != 404:
-        return 'g' #gravatar
-    else:
-        return 'n' #none
+#def _check_gravatar(gravatar):
+#    gravatar_url = "http://www.gravatar.com/avatar/%s?d=404" % gravatar
+#    code = urllib.urlopen(gravatar_url).getcode()
+#    if urllib.urlopen(gravatar_url).getcode() != 404:
+#        return 'g' #gravatar
+#    else:
+#        return 'n' #none
 
 def user_get_old_vote_for_post(self, post):
     """returns previous vote for this post
@@ -2516,15 +2516,15 @@ get_profile_model().add_to_class(
     user_subscribe_for_followed_question_alerts
 )
 get_profile_model().add_to_class('get_absolute_url', user_get_absolute_url)
-get_profile_model().add_to_class('get_avatar_url', user_get_avatar_url)
-get_profile_model().add_to_class('get_default_avatar_url', user_get_default_avatar_url)
-get_profile_model().add_to_class('get_gravatar_url', user_get_gravatar_url)
+#get_profile_model().add_to_class('get_avatar_url', user_get_avatar_url)
+#get_profile_model().add_to_class('get_default_avatar_url', user_get_default_avatar_url)
+#get_profile_model().add_to_class('get_gravatar_url', user_get_gravatar_url)
 get_profile_model().add_to_class('get_marked_tags', user_get_marked_tags)
 get_profile_model().add_to_class('get_marked_tag_names', user_get_marked_tag_names)
 get_profile_model().add_to_class('strip_email_signature', user_strip_email_signature)
 get_profile_model().add_to_class('get_groups_membership_info', user_get_groups_membership_info)
 get_profile_model().add_to_class('get_anonymous_name', user_get_anonymous_name)
-get_profile_model().add_to_class('update_avatar_type', user_update_avatar_type)
+#get_profile_model().add_to_class('update_avatar_type', user_update_avatar_type)
 get_profile_model().add_to_class('post_question', user_post_question)
 get_profile_model().add_to_class('edit_question', user_edit_question)
 get_profile_model().add_to_class('retag_question', user_retag_question)
@@ -2883,13 +2883,13 @@ def notify_author_of_published_revision(
         notify_author_of_published_revision_celery_task.delay(revision)
     
 
-#todo: move to utils
-def calculate_gravatar_hash(instance, **kwargs):
-    """Calculates a User's gravatar hash from their email address."""
-    if kwargs.get('raw', False):
-        return
-    clean_email = instance.email.strip().lower()
-    instance.gravatar = hashlib.md5(clean_email).hexdigest()
+##todo: move to utils
+#def calculate_gravatar_hash(instance, **kwargs):
+#    """Calculates a User's gravatar hash from their email address."""
+#    if kwargs.get('raw', False):
+#        return
+#    clean_email = instance.email.strip().lower()
+#    instance.gravatar = hashlib.md5(clean_email).hexdigest()
 
 
 def record_post_update_activity(
@@ -3250,11 +3250,11 @@ def post_anonymous_askbot_content(
     they are not used in this function"""
     user.post_anonymous_askbot_content(session_key)
 
-def set_user_avatar_type_flag(instance, created, **kwargs):
-    instance.user.update_avatar_type()
-
-def update_user_avatar_type_flag(instance, **kwargs):
-    instance.user.update_avatar_type()
+#def set_user_avatar_type_flag(instance, created, **kwargs):
+#    instance.user.update_avatar_type()
+#
+#def update_user_avatar_type_flag(instance, **kwargs):
+#    instance.user.update_avatar_type()
 
 def make_admin_if_first_user(instance, **kwargs):
     """first user automatically becomes an administrator
@@ -3276,7 +3276,7 @@ def make_admin_if_first_user(instance, **kwargs):
 
 #signal for User model save changes
 django_signals.pre_save.connect(make_admin_if_first_user, sender=User)
-django_signals.pre_save.connect(calculate_gravatar_hash, sender=User)
+#django_signals.pre_save.connect(calculate_gravatar_hash, sender=User)
 django_signals.post_save.connect(add_missing_subscriptions, sender=User)
 django_signals.post_save.connect(record_award_event, sender=Award)
 django_signals.post_save.connect(notify_award_message, sender=Award)
@@ -3284,10 +3284,10 @@ django_signals.post_save.connect(record_answer_accepted, sender=Post)
 django_signals.post_save.connect(record_vote, sender=Vote)
 django_signals.post_save.connect(record_favorite_question, sender=FavoriteQuestion)
 
-if 'avatar' in django_settings.INSTALLED_APPS:
-    from avatar.models import Avatar
-    django_signals.post_save.connect(set_user_avatar_type_flag,sender=Avatar)
-    django_signals.post_delete.connect(update_user_avatar_type_flag, sender=Avatar)
+#if 'avatar' in django_settings.INSTALLED_APPS:
+#    from avatar.models import Avatar
+#    django_signals.post_save.connect(set_user_avatar_type_flag,sender=Avatar)
+#    django_signals.post_delete.connect(update_user_avatar_type_flag, sender=Avatar)
 
 django_signals.post_delete.connect(record_cancel_vote, sender=Vote)
 
