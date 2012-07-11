@@ -92,7 +92,9 @@ def questions(request, **kwargs):
 
     # INFO: Because for the time being we need question posts and thread authors
     #       down the pipeline, we have to precache them in thread objects
-    models.Thread.objects.precache_view_data_hack(threads=page.object_list)
+    
+    #FIXME@atiberghien : reactive or replace it
+    #models.Thread.objects.precache_view_data_hack(threads=page.object_list)
 
     related_tags = Tag.objects.get_related_to_search(threads=page.object_list, ignored_tag_names=meta_data.get('ignored_tag_names', []))
     tag_list_type = askbot_settings.TAG_LIST_FORMAT
