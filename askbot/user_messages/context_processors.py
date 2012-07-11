@@ -18,7 +18,7 @@ def user_messages (request):
         #todo: a hack, for real we need to remove this middleware
         #and switch to the new-style session messages
         return {}
-    messages = request.user.get_and_delete_messages()
+    messages = get_and_delete_messages(request)
     #if request.user.is_authenticated():
     #else:
     #    messages = LazyMessages(request)

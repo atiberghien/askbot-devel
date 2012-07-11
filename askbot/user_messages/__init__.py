@@ -5,6 +5,7 @@ Time-stamp: <2009-03-10 19:22:29 carljm __init__.py>
 
 """
 VERSION = (0, 1, 'pre')
+from django.contrib import messages
 
 def create_message (request, message):
     """
@@ -27,10 +28,10 @@ def get_and_delete_messages (request, include_auth=False):
     """
     assert hasattr(request, 'session'), "django-session-messages requires session middleware to be installed. Edit your MIDDLEWARE_CLASSES setting to insert 'django.contrib.sessions.middleware.SessionMiddleware'."
 
-    messages = request.session.pop('messages', [])
+    msgs = request.session.pop('messages', [])
 
     if include_auth and request.user.is_authenticated():
-        messages.extend(request.user.get_and_delete_messages())
+        msgs.extend([msg for msg in messages.get_messages(request)])
     
-    return messages
+    return msgs
 

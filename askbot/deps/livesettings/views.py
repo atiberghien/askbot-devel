@@ -3,6 +3,7 @@ from django.core.urlresolvers import reverse
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib import messages
 from django.views.decorators.cache import never_cache
 from askbot.deps.livesettings import ConfigurationSettings, forms
 from askbot.deps.livesettings import ImageValue
@@ -45,7 +46,8 @@ def group_settings(request, group, template='livesettings/group_settings.html'):
                     if cfg.update(value):
                         # Give user feedback as to which settings were changed
                         message='Updated %s on %s' % (cfg.key, cfg.group.key)
-                        request.user.message_set.create(message = message)
+#                        request.user.message_set.create(message = message)
+                        messages.add_message(request, messages.INFO, message)
 
                 return HttpResponseRedirect(request.path)
         else:

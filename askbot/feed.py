@@ -14,7 +14,7 @@
 #encoding:utf-8
 import itertools
 
-from django.contrib.syndication.feeds import Feed
+from django.contrib.syndication.views import Feed
 from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import ugettext as _
 from django.core.exceptions import ObjectDoesNotExist
@@ -36,10 +36,8 @@ class RssIndividualQuestionFeed(Feed):
     def description(self):
         return askbot_settings.APP_DESCRIPTION
 
-    def get_object(self, bits):
-        if len(bits) != 1:
-            raise ObjectDoesNotExist
-        return Post.objects.get_questions().get(id__exact = bits[0])
+    def get_object(self, request, question_id):
+        return Post.objects.get_questions().get(id=question_id)
 
     def item_link(self, item):
         """get full url to the item
@@ -147,20 +145,20 @@ class RssLastestQuestionsFeed(Feed):
         #initial filtering
         qs = Post.objects.get_questions().filter(deleted=False)
 
-        #get search string and tags from GET
-        query = self.request.GET.get("q", None)
-        tags = self.request.GET.getlist("tags")
-
-        if query:
-            #if there's a search string, use the
-            #question search method
-            qs = qs.get_by_text_query(query)
-
-        if tags:
-            #if there are tags in GET, filter the
-            #questions additionally
-            for tag in tags:
-                qs = qs.filter(thread__tags__name = tag)
+#        #get search string and tags from GET
+#        query = self.request.GET.get("q", None)
+#        tags = self.request.GET.getlist("tags")
+#
+#        if query:
+#            #if there's a search string, use the
+#            #question search method
+#            qs = qs.get_by_text_query(query)
+#
+#        if tags:
+#            #if there are tags in GET, filter the
+#            #questions additionally
+#            for tag in tags:
+#                qs = qs.filter(thread__tags__name = tag)
 
         return qs.order_by('-thread__last_activity_at')[:30]
 

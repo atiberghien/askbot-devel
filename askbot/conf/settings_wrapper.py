@@ -104,7 +104,7 @@ class ConfigSettings(object):
         for key in cls.__instance.keys():
             #todo: this is odd that I could not use self.__instance.items() mapping here
             out[key] = cls.__instance[key].value
-        cache.set('askbot-livesettings', out)
+        cache.add('askbot-livesettings', out)
 
 
 signals.configuration_value_changed.connect(ConfigSettings.prime_cache)
