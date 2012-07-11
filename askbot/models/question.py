@@ -328,7 +328,7 @@ class ThreadManager(models.Manager):
             thread._question_cache = page_question_map[thread.id]
 
         last_activity_by_users = get_profile_model().objects.filter(user__id__in=[obj.last_activity_by_id for obj in threads])
-        last_activity_by_users = last_activity_by_users.only('user__id', 'user__username', 'country', 'show_country')
+        last_activity_by_users = last_activity_by_users.only('user__id', 'user__username')#, 'country', 'show_country')
         
         user_map = {}
         for la_user in last_activity_by_users:
