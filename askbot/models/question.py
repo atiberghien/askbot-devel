@@ -136,22 +136,22 @@ class ThreadManager(models.Manager):
 #            matching_questions = Question.sphinx_search.query(search_query)
 #            question_ids = [q.id for q in matching_questions]
 #            return qs.filter(posts__post_type='question', posts__deleted=False, posts__self_question_id__in=question_ids)
-        if askbot.get_database_engine_name().endswith('mysql') \
-            and mysql.supports_full_text_search():
-            return qs.filter(
-                models.Q(title__search = search_query) |
-                models.Q(tagnames__search = search_query) |
-                models.Q(posts__deleted=False, posts__text__search = search_query)
-            )
-        elif 'postgresql_psycopg2' in askbot.get_database_engine_name():
-            from askbot.search import postgresql
-            return postgresql.run_full_text_search(qs, search_query)
-        else:
-            return qs.filter(
-                models.Q(title__icontains=search_query) |
-                models.Q(tagnames__icontains=search_query) |
-                models.Q(posts__deleted=False, posts__text__icontains = search_query)
-            )
+#        if askbot.get_database_engine_name().endswith('mysql') \
+#            and mysql.supports_full_text_search():
+#            return qs.filter(
+#                models.Q(title__search = search_query) |
+#                models.Q(tagnames__search = search_query) |
+#                models.Q(posts__deleted=False, posts__text__search = search_query)
+#            )
+#        elif 'postgresql_psycopg2' in askbot.get_database_engine_name():
+#            from askbot.search import postgresql
+#            return postgresql.run_full_text_search(qs, search_query)
+#        else:
+        return qs.filter(
+            models.Q(title__icontains=search_query) |
+            models.Q(tagnames__icontains=search_query) |
+            models.Q(posts__deleted=False, posts__text__icontains = search_query)
+        )
 
 
     def run_advanced_search(self, request_user, search_state):  # TODO: !! review, fix, and write tests for this
@@ -294,8 +294,9 @@ class ThreadManager(models.Manager):
 
             'relevance-desc': '-relevance', # special Postgresql-specific ordering, 'relevance' quaso-column is added by get_for_query()
         }
-        orderby = QUESTION_ORDER_BY_MAP[search_state.sort]
-        qs = qs.extra(order_by=[orderby])
+        if search_state.sort != 'relevance-desc': #FIXME:  temporary disable relevance
+            orderby = QUESTION_ORDER_BY_MAP[search_state.sort]
+            qs = qs.extra(order_by=[orderby])
 
         # HACK: We add 'ordering_key' column as an alias and order by it, because when distict() is used,
         #       qs.extra(order_by=[orderby,]) is lost if only `orderby` column is from askbot_post!
