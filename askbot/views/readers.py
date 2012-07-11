@@ -129,8 +129,12 @@ def questions(request, **kwargs):
         # We have tags in session - pass it to the
         # QueryDict but as a list - we want tags+
         rss_query_dict.setlist("tags", search_state.tags)
-    context_feed_url = '/%sfeeds/rss/?%s' % (settings.ASKBOT_URL, rss_query_dict.urlencode()) # Format the url with the QueryDict
-
+        
+    context_feed_url = reverse('latest_questions_feed')
+    feed_url_params = rss_query_dict.urlencode()
+    if feed_url_params :
+        context_feed_url = '/%s?%s' % (context_feed_url, feed_url_params) # Format the url with the QueryDict
+    
     reset_method_count = len(filter(None, [search_state.query, search_state.tags, meta_data.get('author_name', None)]))
 
     if request.is_ajax():
