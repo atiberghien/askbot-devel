@@ -452,7 +452,7 @@ def user_stats(request, user, context):
         'tab_name' : 'stats',
         'tab_description' : _('user profile'),
         'page_title' : _('user profile overview'),
-        'user_status_for_display': user.get_status_display(soft = True),
+        'user_status_for_display': user.get_status_display(),
         'questions' : questions,
         'question_count': question_count,
 
