@@ -15,7 +15,7 @@ VERSION = (0, 7, 43)
 #values - the package qualifier to use for pip
 REQUIREMENTS = {
     'akismet': 'akismet',
-    'django': 'django==1.3.1',
+    'django': 'django>=1.3.1',
     'jinja2': 'Jinja2',
     'coffin': 'Coffin>=0.3',
     'south': 'South>=0.7.1',
@@ -45,6 +45,7 @@ try:
     patches.patch_django()
     patches.patch_coffin()#must go after django
 except ImportError:
+
     pass
 
 def get_install_directory():
