@@ -191,7 +191,7 @@ def questions(request, **kwargs):
             'ignored_tag_names': meta_data.get('ignored_tag_names', None),
             'subscribed_tag_names': meta_data.get('subscribed_tag_names', None),
             'language_code': translation.get_language(),
-            'name_of_anonymous_user' : models.get_name_of_anonymous_user(),
+            'name_of_anonymous_user' : models.profile.get_name_of_anonymous_user(),
             'page_class': 'main-page',
             'page_size': page_size,
             'query': search_state.query,

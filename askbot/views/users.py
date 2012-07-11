@@ -140,25 +140,25 @@ def show_users(request, by_group = False, group_id = None, group_slug = None):
         base_url = request.path + '?name=%s&amp;sort=%s&amp;' % (search_query, sortby)
 
     try:
-        users_page = objects_list.page(page)
+        profiles_page = objects_list.page(page)
     except (EmptyPage, InvalidPage):
-        users_page = objects_list.page(objects_list.num_pages)
+        profiles_page = objects_list.page(objects_list.num_pages)
 
     paginator_data = {
         'is_paginated' : is_paginated,
         'pages': objects_list.num_pages,
         'page': page,
-        'has_previous': users_page.has_previous(),
-        'has_next': users_page.has_next(),
-        'previous': users_page.previous_page_number(),
-        'next': users_page.next_page_number(),
+        'has_previous': profiles_page.has_previous(),
+        'has_next': profiles_page.has_next(),
+        'previous': profiles_page.previous_page_number(),
+        'next': profiles_page.next_page_number(),
         'base_url' : base_url
     }
     paginator_context = functions.setup_paginator(paginator_data) #
     data = {
         'active_tab': 'users',
         'page_class': 'users-page',
-        'users' : users_page,
+        'users' : profiles_page,
         'group': group,
         'search_query' : search_query,
         'tab_id' : sortby,
