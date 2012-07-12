@@ -15,6 +15,7 @@ import time
 import urlparse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect, HttpResponse, HttpResponseForbidden, Http404
 from django.utils import simplejson
 from django.utils import translation
@@ -33,6 +34,7 @@ from askbot.utils import decorators
 from askbot.utils.functions import diff_date
 from askbot.utils import url_utils
 from askbot.utils.file_utils import store_file
+from askbot.utils.forms import post_as_user
 from askbot.templatetags import extra_filters_jinja as template_filters
 from askbot.importers.stackexchange import management as stackexchange#todo: may change
 from django.contrib.sites.models import Site
@@ -220,11 +222,14 @@ def ask(request):#view used to ask a new question
             ask_anonymously = form.cleaned_data['ask_anonymously']
 
             if request.user.is_authenticated():
+
+                user = post_as_user(request.user, form)
+               
                 try:
                     language_code = translation.get_language()
                     site = Site.objects.get_current()
-                    
-                    question = request.user.post_question(
+
+                    question = user.post_question(
                         language_code = language_code,
                         site= site,
                         title = title,
@@ -383,7 +388,8 @@ def edit_question(request, id):
                         is_anon_edit = form.cleaned_data['stay_anonymous']
                         is_wiki = form.cleaned_data.get('wiki', question.wiki)
 
-                        request.user.edit_question(
+                        user = post_as_user(request.user, form, userfield='user_author')
+                        user.edit_question(
                             question = question,
                             title = form.cleaned_data['title'],
                             body_text = form.cleaned_data['text'],
@@ -453,7 +459,8 @@ def edit_answer(request, id):
 
                 if form.is_valid():
                     if form.has_changed():
-                        request.user.edit_answer(
+                        user = post_as_user(request.user, form)
+                        user.edit_answer(
                                 answer = answer,
                                 body_text = form.cleaned_data['text'],
                                 revision_comment = form.cleaned_data['summary'],
@@ -499,7 +506,10 @@ def answer(request, id):#process a new answer
             if request.user.is_authenticated():
                 try:
                     follow = form.cleaned_data['email_notify']
-                    answer = request.user.post_answer(
+
+                    user = post_as_user(request.user, form)
+
+                    answer = user.post_answer(
                                         question = question,
                                         body_text = text,
                                         follow = follow,

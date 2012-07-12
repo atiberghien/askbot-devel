@@ -765,6 +765,14 @@ class AskForm(forms.Form, FormWithHideableFields):
         required=False, max_length=255,
         widget=forms.TextInput(attrs={'size': 35})
     )
+    openid = forms.CharField(required=False, max_length=255, widget=forms.TextInput(attrs={'size' : 40, 'class':'openid-input'}))
+    user   = forms.CharField(
+        required=False,
+        max_length=255,
+        label="User",
+        help_text=_("Enter the username to post this as. New users are automatically created."),
+        widget=forms.TextInput(attrs={'size' : 35}))
+    email  = forms.CharField(required=False, max_length=255, widget=forms.TextInput(attrs={'size' : 35}))
 
     def __init__(self, *args, **kwargs):
         super(AskForm, self).__init__(*args, **kwargs)
@@ -868,21 +876,17 @@ class AskByEmailForm(forms.Form):
 
 
 class AnswerForm(forms.Form):
-    text = AnswerEditorField()
-    wiki = WikiField()
-    openid = forms.CharField(
-        required=False, max_length=255,
-        widget=forms.TextInput(attrs={'size': 40, 'class': 'openid-input'})
-    )
-    user = forms.CharField(
-        required=False, max_length=255,
-        widget=forms.TextInput(attrs={'size': 35})
-    )
-    email = forms.CharField(
-        required=False, max_length=255,
-        widget=forms.TextInput(attrs={'size': 35})
-    )
-    email_notify = EmailNotifyField(initial=False)
+    text   = AnswerEditorField()
+    wiki   = WikiField()
+    openid = forms.CharField(required=False, max_length=255, widget=forms.TextInput(attrs={'size' : 40, 'class':'openid-input'}))
+    user   = forms.CharField(
+        required=False,
+        max_length=255,
+        label="User",
+        help_text=_("Enter the username to post this as. New users are automatically created."),
+        widget=forms.TextInput(attrs={'size' : 35}))
+    email  = forms.CharField(required=False, max_length=255, widget=forms.TextInput(attrs={'size' : 35}))
+    email_notify = EmailNotifyField(initial = False)
 
     def __init__(self, *args, **kwargs):
         super(AnswerForm, self).__init__(*args, **kwargs)
@@ -967,6 +971,12 @@ class EditQuestionForm(forms.Form, FormWithHideableFields):
         label=_('reveal identity'),
         required=False,
     )
+    user_author  = forms.CharField(
+        required=False,
+        max_length=255,
+        label="User",
+        help_text=_("Enter the username to post this as. New users are automatically created."),
+        widget=forms.TextInput(attrs={'size' : 35}))
 
     #todo: this is odd that this form takes question as an argument
     def __init__(self, *args, **kwargs):
@@ -1065,6 +1075,12 @@ class EditAnswerForm(forms.Form):
     text = AnswerEditorField()
     summary = SummaryField()
     wiki = WikiField()
+    user = forms.CharField(
+        required=False,
+        max_length=255,
+        label="User",
+        help_text=_("Enter the username to post this as. New users are automatically created."),
+        widget=forms.TextInput(attrs={'size' : 35}))
 
     def __init__(self, answer, revision, *args, **kwargs):
         super(EditAnswerForm, self).__init__(*args, **kwargs)
