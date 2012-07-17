@@ -25,6 +25,7 @@ from django.core import exceptions as django_exceptions
 from django.contrib.humanize.templatetags import humanize
 from django.http import QueryDict
 from django.conf import settings
+from django.contrib.sites.models import Site
 
 import askbot
 from askbot import exceptions
@@ -71,6 +72,10 @@ def questions(request, **kwargs):
     List of Questions, Tagged questions, and Unanswered questions.
     matching search query or user selection
     """
+    language_code = translation.get_language()
+    
+    site = Site.objects.get_current()
+    
     #before = datetime.datetime.now()
     if request.method != 'GET':
         return HttpResponseNotAllowed(['GET'])
@@ -78,7 +83,10 @@ def questions(request, **kwargs):
     search_state = SearchState(user_logged_in=request.user.is_authenticated(), **kwargs)
     page_size = int(askbot_settings.DEFAULT_QUESTIONS_PAGE_SIZE)
 
-    qs, meta_data = models.Thread.objects.run_advanced_search(request_user=request.user, search_state=search_state)
+    qs, meta_data = models.Thread.objects.run_advanced_search(request_user=request.user, 
+                                                              language_code=language_code,
+                                                              site=site,
+                                                              search_state=search_state)
 
     if meta_data['non_existing_tags']:
         search_state = search_state.remove_tags(meta_data['non_existing_tags'])

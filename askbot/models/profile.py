@@ -1421,6 +1421,8 @@ class AskbotBaseProfile(models.Model):
             raise NotImplementedError()
     
     def post_question(self,
+                        language_code,
+                        site,
                         title = None,
                         body_text = '',
                         tags = None,
@@ -1447,6 +1449,8 @@ class AskbotBaseProfile(models.Model):
         #todo: split this into "create thread" + "add queston", if text exists
         #or maybe just add a blank question post anyway
         thread = Thread.objects.create_new(
+                                        language_code = language_code,
+                                        site=site,
                                         author = self.user,
                                         title = title,
                                         text = body_text,

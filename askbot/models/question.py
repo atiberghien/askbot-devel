@@ -24,6 +24,7 @@ from askbot.utils.slug import slugify
 from askbot.skins.loaders import get_template #jinja2 template loading enviroment
 from askbot.search.state_manager import DummySearchState
 from userena.utils import get_profile_model
+from django.contrib.sites.models import Site
 
 
 class ThreadManager(models.Manager):
@@ -65,6 +66,8 @@ class ThreadManager(models.Manager):
 
     def create_new(
                 self,
+                language_code,
+                site,
                 title,
                 author,
                 added_at,
@@ -82,6 +85,8 @@ class ThreadManager(models.Manager):
             ThreadManager,
             self
         ).create(
+            language_code=language_code,
+            site=site,
             title=title,
             tagnames=tagnames,
             last_activity_at=added_at,
@@ -154,7 +159,7 @@ class ThreadManager(models.Manager):
         )
 
 
-    def run_advanced_search(self, request_user, search_state):  # TODO: !! review, fix, and write tests for this
+    def run_advanced_search(self, request_user, language_code, site, search_state):  # TODO: !! review, fix, and write tests for this
         """
         all parameters are guaranteed to be clean
         however may not relate to database - in that case
@@ -165,6 +170,8 @@ class ThreadManager(models.Manager):
 
         # TODO: add a possibility to see deleted questions
         qs = self.filter(
+                language_code=language_code,
+                site=site,
                 posts__post_type='question', 
                 posts__deleted=False,
             ) # (***) brings `askbot_post` into the SQL query, see the ordering section below
@@ -372,6 +379,9 @@ class Thread(models.Model):
     SUMMARY_CACHE_KEY_TPL = 'thread-question-summary-%d'
     ANSWER_LIST_KEY_TPL = 'thread-answer-list-%d'
 
+    language_code = models.CharField(_('language'), max_length=6, choices=settings.LANGUAGES)
+    site = models.ForeignKey(Site, null=True)
+    
     title = models.CharField(max_length=300)
 
     tags = models.ManyToManyField('Tag', related_name='threads')

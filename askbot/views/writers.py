@@ -17,6 +17,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect, HttpResponse, HttpResponseForbidden, Http404
 from django.utils import simplejson
+from django.utils import translation
 from django.utils.html import strip_tags, escape
 from django.utils.translation import ugettext as _
 from django.core.urlresolvers import reverse
@@ -33,6 +34,7 @@ from askbot.utils import url_utils
 from askbot.utils.file_utils import store_file
 from askbot.templatetags import extra_filters_jinja as template_filters
 from askbot.importers.stackexchange import management as stackexchange#todo: may change
+from django.contrib.sites.models import Site
 
 # used in index page
 INDEX_PAGE_SIZE = 20
@@ -218,7 +220,12 @@ def ask(request):#view used to ask a new question
 
             if request.user.is_authenticated():
                 try:
+                    language_code = translation.get_language()
+                    site = Site.objects.get_current()
+                    
                     question = request.user.post_question(
+                        language_code = language_code,
+                        site= site,
                         title = title,
                         body_text = text,
                         tags = tagnames,
