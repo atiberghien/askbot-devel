@@ -13,7 +13,8 @@ from askbot.utils import url_utils
 
 def application_settings(request):
     """The context processor function"""
-    if not request.path.startswith('/' + settings.ASKBOT_URL):
+    #FIXME: @atiberghien : temporary, in order to allow language prefix in URL
+    if "/%s" % settings.ASKBOT_URL not in request.path:
         #todo: this is a really ugly hack, will only work
         #when askbot is installed not at the home page.
         #this will not work for the

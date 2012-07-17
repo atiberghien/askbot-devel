@@ -14,7 +14,8 @@ def user_messages (request):
     Returns session messages for the current session.
 
     """
-    if not request.path.startswith('/' + django_settings.ASKBOT_URL):
+    #FIXME: @atiberghien : temporary, in order to allow language prefix in URL
+    if '/%s' % django_settings.ASKBOT_URL not in request:
         #todo: a hack, for real we need to remove this middleware
         #and switch to the new-style session messages
         return {}
