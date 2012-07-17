@@ -1817,7 +1817,7 @@ class AskbotBaseProfile(models.Model):
         form = forms.EditUserEmailFeedsForm()
         need_feed_types = form.get_db_model_subscription_type_names()
         have_feed_types = EmailFeedSetting.objects.filter(
-                                                subscriber = self
+                                                subscriber = self.user
                                             ).values_list(
                                                 'feed_type', flat = True
                                             )
@@ -1826,7 +1826,7 @@ class AskbotBaseProfile(models.Model):
             attr_key = 'DEFAULT_NOTIFICATION_DELIVERY_SCHEDULE_%s' % missing_feed_type.upper()
             freq = getattr(askbot_settings, attr_key)
             feed_setting = EmailFeedSetting(
-                                subscriber = self,
+                                subscriber = self.user,
                                 feed_type = missing_feed_type,
                                 frequency = freq
                             )
