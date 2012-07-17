@@ -264,7 +264,7 @@ def ask(request):#view used to ask a new question
         'page_class': 'ask-page',
         'form' : form,
         'mandatory_tags': models.tag.get_mandatory_tags(),
-        'email_validation_faq_url':reverse('faq') + '#validate',
+#        'email_validation_faq_url':reverse('faq') + '#validate',
     }
     return render_into_skin('ask.html', data, request)
 
