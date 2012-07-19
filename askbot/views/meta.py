@@ -69,7 +69,7 @@ def faq(request):
         )
     else:
         data = {
-            'gravatar_faq_url': reverse('faq') + '#gravatar',
+#            'gravatar_faq_url': reverse('faq') + '#gravatar',
             'ask_question_url': reverse('ask'),
             'page_class': 'meta',
         }
@@ -129,7 +129,7 @@ def badges(request):#user status/reputation system
         'badges' : badges,
         'page_class': 'meta',
         'mybadges' : my_badges,
-        'feedback_faq_url' : reverse('feedback'),
+#        'feedback_faq_url' : reverse('feedback'),
     }
     return render_into_skin('badges.html', data, request)
 
