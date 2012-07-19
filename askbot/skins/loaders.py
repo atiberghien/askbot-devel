@@ -12,6 +12,7 @@ from askbot.conf import settings as askbot_settings
 from askbot.skins import utils
 
 from coffin import template
+from django.template.loader import render_to_string
 template.add_to_builtins('askbot.templatetags.extra_filters_jinja')
 
 #module for skinning askbot
@@ -84,6 +85,9 @@ class SkinEnvironment(CoffinEnvironment):
             return '<link href="%s" rel="stylesheet" type="text/css" />' % url
         return ''
 
+def include_django(template_name, request):
+    return render_to_string(template_name, {},context_instance=RequestContext(request))
+
 def load_skins():
     skins = dict()
     for skin_name in utils.get_available_skins():
@@ -92,6 +96,7 @@ def load_skins():
                                 extensions=['jinja2.ext.i18n',]
                             )
         skins[skin_name].set_language(django_settings.LANGUAGE_CODE)
+        skins[skin_name].globals['include_django'] = include_django
         #from askbot.templatetags import extra_filters_jinja as filters
         #skins[skin_name].filters['media'] = filters.media
     return skins

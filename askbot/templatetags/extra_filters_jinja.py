@@ -123,6 +123,13 @@ def media(url):
         return skin_utils.get_media_url(url)
     else:
         return ''
+    
+@register.filter
+def static_url(url):
+    if url:
+        return "%s%s" % (django_settings.STATIC_URL, url.strip("/"))
+    else:
+        return ''
 
 @register.filter
 def fullmedia(url):
