@@ -14,7 +14,7 @@ from django.utils.translation import ungettext
 import askbot
 import askbot.conf
 from askbot.models.tag import Tag
-from askbot.models.base import AnonymousContent
+from askbot.models.base import DraftContent
 from askbot.models.post import Post, PostRevision
 from askbot.models import signals
 from askbot import const
@@ -593,7 +593,7 @@ class Thread(models.Model):
             #pass through only deleted question posts
             if post.deleted and post.post_type != 'question':
                 continue
-            if post.approved == False:#hide posts on the moderation queue
+            if post.is_approved() is False:#hide posts on the moderation queue
                 continue
 
             post_to_author[post.id] = post.author_id
@@ -735,6 +735,9 @@ class Thread(models.Model):
 
         *IMPORTANT*: self._question_post() has to exist when update_tags() is called!
         """
+        if tagnames.strip() == '':
+            return
+
         previous_tags = list(self.tags.all())
 
         previous_tagnames = set([tag.name for tag in previous_tags])
@@ -929,7 +932,7 @@ class FavoriteQuestion(models.Model):
         return '[%s] favorited at %s' %(self.user, self.added_at)
 
 
-class AnonymousQuestion(AnonymousContent):
+class AnonymousQuestion(DraftContent):
     """question that was asked before logging in
     maybe the name is a little misleading, the user still
     may or may not want to stay anonymous after the question
