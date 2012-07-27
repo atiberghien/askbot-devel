@@ -3315,11 +3315,8 @@ signals.post_revision_published.connect(notify_author_of_published_revision)
 signals.site_visited.connect(record_user_visit)
 
 #set up a possibility for the users to follow others
-try:
-    import followit
-    followit.register(User)
-except ImportError:
-    pass
+import followit
+followit.register(User)
 
 __all__ = [
         'signals',
