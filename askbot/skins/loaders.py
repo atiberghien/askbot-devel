@@ -120,14 +120,18 @@ def get_template(template, request = None):
         skin.set_language(request.LANGUAGE_CODE)
     return skin.get_template(template)
 
-def render_into_skin(template, data, request, mimetype = 'text/html'):
+def render_into_skin(template, data, request, to_string=False, mimetype = 'text/html'):
     """in the future this function will be able to
     switch skin depending on the site administrator/user selection
     right now only admins can switch
     """
     context = RequestContext(request, data)
     template = get_template(template, request)
-    return HttpResponse(template.render(context), mimetype = mimetype)
+    content = template.render(context)
+    if to_string:
+        return content
+    else:
+        return HttpResponse(content, mimetype = mimetype)
 
 def render_text_into_skin(text, data, request):
     context = RequestContext(request, data)
