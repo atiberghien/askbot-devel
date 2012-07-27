@@ -27,7 +27,6 @@ from django.http import QueryDict
 from django.conf import settings
 from django.contrib.sites.models import Site
 
-import askbot
 from askbot import exceptions
 from askbot.utils.diff import textDiff as htmldiff
 from askbot.forms import AnswerForm, ShowQuestionForm
