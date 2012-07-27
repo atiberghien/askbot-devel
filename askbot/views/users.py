@@ -20,8 +20,7 @@ from django.core.paginator import Paginator, EmptyPage, InvalidPage
 from django.contrib.contenttypes.models import ContentType
 from django.core.urlresolvers import reverse
 from django.shortcuts import get_object_or_404
-from django.http import HttpResponse, HttpResponseForbidden
-from django.http import HttpResponseRedirect, Http404
+from django.http import Http404, HttpResponseRedirect
 from django.utils.translation import ugettext as _
 from django.utils import simplejson
 from django.views.decorators import csrf
@@ -37,7 +36,7 @@ from askbot.conf import settings as askbot_settings
 from askbot import models
 from askbot import exceptions
 from askbot.models.badges import award_badges_signal
-from askbot.skins.loaders import render_into_skin
+from askbot.skins.loaders import render_into_skin, render_text_into_skin
 from askbot.templatetags import extra_tags
 from askbot.search.state_manager import SearchState
 from askbot.utils import url_utils
@@ -175,8 +174,8 @@ def user_moderate(request, subject, context):
     """
     moderator = request.user
 
-    if moderator.is_authenticated() and not moderator.can_moderate_user(subject):
-        raise Http404
+    if moderator.is_anonymous() or (moderator.is_authenticated() and not moderator.can_moderate_user(subject)):
+        return HttpResponseRedirect(subject.get_profile_url())
 
     user_rep_changed = False
     user_status_changed = False
@@ -185,7 +184,10 @@ def user_moderate(request, subject, context):
 
     user_rep_form = forms.ChangeUserReputationForm()
     send_message_form = forms.SendMessageForm()
-    if request.method == 'POST':
+    
+    return_to_tab = False
+    
+    if request.method == 'POST' and request.POST["submitted_tab"] == "moderation":
         if 'change_status' in request.POST:
             user_status_form = forms.ChangeUserStatusForm(
                                                     request.POST,
@@ -194,6 +196,8 @@ def user_moderate(request, subject, context):
                                                 )
             if user_status_form.is_valid():
                 subject.set_status( user_status_form.cleaned_data['user_status'] )
+            else:
+                return_to_tab = True
             user_status_changed = True
         elif 'send_message' in request.POST:
             send_message_form = forms.SendMessageForm(request.POST)
@@ -213,14 +217,14 @@ def user_moderate(request, subject, context):
                 except exceptions.EmailNotSent, e:
                     email_error_message = unicode(e)
                 send_message_form = forms.SendMessageForm()
+            else:
+                return_to_tab = True
         else:
-            reputation_change_type = None
+            rep_change_type = None
             if 'subtract_reputation' in request.POST:
                 rep_change_type = 'subtract'
             elif 'add_reputation' in request.POST:
                 rep_change_type = 'add'
-            else:
-                raise Http404
 
             user_rep_form = forms.ChangeUserReputationForm(request.POST)
             if user_rep_form.is_valid():
@@ -239,6 +243,9 @@ def user_moderate(request, subject, context):
                 #reset form to preclude accidentally repeating submission
                 user_rep_form = forms.ChangeUserReputationForm()
                 user_rep_changed = True
+            else:
+                return_to_tab = True
+#        return HttpResponseRedirect(subject.get_profile_url())
 
     #need to re-initialize the form even if it was posted, because
     #initial values will most likely be different from the previous
@@ -247,11 +254,7 @@ def user_moderate(request, subject, context):
                                         subject = subject
                                     )
     data = {
-        'active_tab': 'users',
-        'page_class': 'user-profile-page',
-        'tab_name': 'moderation',
-        'tab_description': _('moderate this user'),
-        'page_title': _('moderate user'),
+        'return_to_tab': "moderation" if return_to_tab else "",
         'change_user_status_form': user_status_form,
         'change_user_reputation_form': user_rep_form,
         'send_message_form': send_message_form,
@@ -260,8 +263,9 @@ def user_moderate(request, subject, context):
         'user_rep_changed': user_rep_changed,
         'user_status_changed': user_status_changed
     }
-    context.update(data)
-    return render_into_skin('user_profile/user_moderate.html', context, request)
+    
+    
+    return data
 
 #non-view function
 def set_new_email(user, new_email, nomessage=False):
@@ -446,14 +450,8 @@ def user_stats(request, user, context):
         groups_membership_info = collections.defaultdict()
 
     data = {
-        'active_tab':'users',
-        'page_class': 'user-profile-page',
-        'support_custom_avatars': ('avatar' in django_settings.INSTALLED_APPS),
-        'tab_name' : 'stats',
-        'tab_description' : _('user profile'),
-        'page_title' : _('user profile overview'),
         'user_status_for_display': user.get_status_display(),
-        'questions' : questions,
+        'user_questions' : questions,
         'question_count': question_count,
 
         'top_answers': top_answers,
@@ -474,9 +472,8 @@ def user_stats(request, user, context):
         'badges': badges,
         'total_badges' : len(badges),
     }
-    context.update(data)
-
-    return render_into_skin('user_profile/user_stats.html', context, request)
+    
+    return data
 
 def user_recent(request, user, context):
 
@@ -622,15 +619,10 @@ def user_recent(request, user, context):
     activities.sort(key=operator.attrgetter('time'), reverse=True)
 
     data = {
-        'active_tab': 'users',
-        'page_class': 'user-profile-page',
-        'tab_name' : 'recent',
-        'tab_description' : _('recent user activity'),
-        'page_title' : _('profile - recent activity'),
         'activities' : activities[:const.USER_VIEW_DATA_SIZE]
     }
-    context.update(data)
-    return render_into_skin('user_profile/user_recent.html', context, request)
+    
+    return data
 
 @owner_or_moderator_required
 def user_responses(request, user, context):
@@ -647,9 +639,8 @@ def user_responses(request, user, context):
 
     #1) select activity types according to section
     section = request.GET.get('section', 'forum')
-    if section == 'flags' and not\
-        (request.user.is_moderator() or request.user.is_administrator()):
-        raise Http404
+    if section == 'flags' and not (request.user.is_moderator() or request.user.is_administrator()):
+        return {}
 
     if section == 'forum':
         activity_types = const.RESPONSE_ACTIVITY_TYPES_FOR_DISPLAY
@@ -662,22 +653,17 @@ def user_responses(request, user, context):
                 const.TYPE_ACTIVITY_MODERATED_POST_EDIT
             )
     else:
-        raise Http404
+        return {}
 
     #2) load the activity notifications according to activity types
     #todo: insert pagination code here
-    memo_set = models.ActivityAuditStatus.objects.filter(
-                    user = request.user,
-                    activity__activity_type__in = activity_types
-                ).select_related(
-                    'activity',
-                    'activity__content_type',
-                    'activity__question__thread',
-                    'activity__user',
-#                    'activity__user__gravatar',
-                ).order_by(
-                    '-activity__active_at'
-                )[:const.USER_VIEW_DATA_SIZE]
+    memo_set = models.ActivityAuditStatus.objects.filter(user=request.user, activity__activity_type__in=activity_types)\
+                                                 .select_related('activity',
+                                                                 'activity__content_type',
+                                                                 'activity__question__thread',
+                                                                 #'activity__user__gravatar',
+                                                                 'activity__user')\
+                                                .order_by('-activity__active_at')[:const.USER_VIEW_DATA_SIZE]
 
     #3) "package" data for the output
     response_list = list()
@@ -720,28 +706,17 @@ def user_responses(request, user, context):
 
     reject_reasons = models.PostFlagReason.objects.all().order_by('title')
     data = {
-        'active_tab':'users',
-        'page_class': 'user-profile-page',
-        'tab_name' : 'inbox',
-        'inbox_section':section,
-        'tab_description' : _('comments and answers to others questions'),
-        'page_title' : _('profile - responses'),
         'post_reject_reasons': reject_reasons,
         'responses' : filtered_response_list,
     }
-    context.update(data)
-    return render_into_skin('user_profile/user_inbox.html', context, request)
+    
+    return data
 
 def user_network(request, user, context):
-    if 'followit' not in django_settings.INSTALLED_APPS:
-        raise Http404
-    data = {
-        'tab_name': 'network',
+    return {
         'followed_users': user.get_followed_users(),
         'followers': user.get_followers(),
     }
-    context.update(data)
-    return render_into_skin('user_profile/user_network.html', context, request)
 
 @owner_or_moderator_required
 def user_votes(request, user, context):
@@ -763,15 +738,9 @@ def user_votes(request, user, context):
     votes.sort(key=operator.attrgetter('id'), reverse=True)
 
     data = {
-        'active_tab':'users',
-        'page_class': 'user-profile-page',
-        'tab_name' : 'votes',
-        'tab_description' : _('user vote record'),
-        'page_title' : _('profile - votes'),
         'votes' : votes[:const.USER_VIEW_DATA_SIZE]
     }
-    context.update(data)
-    return render_into_skin('user_profile/user_votes.html', context, request)
+    return data
 
 
 def user_reputation(request, user, context):
@@ -785,16 +754,10 @@ def user_reputation(request, user, context):
     reps = '[%s]' % reps
 
     data = {
-        'active_tab':'users',
-        'page_class': 'user-profile-page',
-        'tab_name': 'reputation',
-        'tab_description': _('user karma'),
-        'page_title': _("Profile - User's Karma"),
         'reputation': reputes,
         'reps': reps
     }
-    context.update(data)
-    return render_into_skin('user_profile/user_reputation.html', context, request)
+    return data
 
 
 def user_favorites(request, user, context):
@@ -804,28 +767,21 @@ def user_favorites(request, user, context):
                     .order_by('-score', '-thread__last_activity_at')[:const.USER_VIEW_DATA_SIZE]
 
     data = {
-        'active_tab':'users',
-        'page_class': 'user-profile-page',
-        'tab_name' : 'favorites',
-        'tab_description' : _('users favorite questions'),
-        'page_title' : _('profile - favorite questions'),
-        'questions' : questions,
+        'favorite_questions' : questions,
     }
-    context.update(data)
-    return render_into_skin('user_profile/user_favorites.html', context, request)
+    return data
 
 
 @owner_or_moderator_required
 @csrf.csrf_protect
 def user_email_subscriptions(request, user, context):
-
     logging.debug(get_request_info(request))
-    if request.method == 'POST':
+    action_status = None
+    if request.method == 'POST' and request.POST["submitted_tab"] == "email_subscriptions":
         email_feeds_form = forms.EditUserEmailFeedsForm(request.POST)
         tag_filter_form = forms.TagFilterSelectionForm(request.POST, instance=user)
         if email_feeds_form.is_valid() and tag_filter_form.is_valid():
 
-            action_status = None
             tag_filter_saved = tag_filter_form.save()
             if tag_filter_saved:
                 action_status = _('changes saved')
@@ -839,6 +795,7 @@ def user_email_subscriptions(request, user, context):
                 email_feeds_form = forms.EditUserEmailFeedsForm(initial=initial_values)
                 if email_stopped:
                     action_status = _('email updates canceled')
+#        return HttpResponseRedirect(user.get_profile_url())      
     else:
         #user may have been created by some app that does not know
         #about the email subscriptions, in that case the call below
@@ -850,24 +807,13 @@ def user_email_subscriptions(request, user, context):
         email_feeds_form = forms.EditUserEmailFeedsForm()
         email_feeds_form.set_initial_values(user)
         tag_filter_form = forms.TagFilterSelectionForm(instance=user)
-        action_status = None
 
     data = {
-        'active_tab': 'users',
-        'page_class': 'user-profile-page',
-        'tab_name': 'email_subscriptions',
-        'tab_description': _('email subscription settings'),
-        'page_title': _('profile - email subscriptions'),
         'email_feeds_form': email_feeds_form,
         'tag_filter_selection_form': tag_filter_form,
         'action_status': action_status,
     }
-    context.update(data)
-    return render_into_skin(
-        'user_profile/user_email_subscriptions.html',
-        context,
-        request
-    )
+    return data
 
 @csrf.csrf_protect
 def user_custom_tab(request, user, context):
@@ -880,12 +826,11 @@ def user_custom_tab(request, user, context):
     page_title = _('profile - %(section)s') % \
         {'section': tab_settings['NAME']}
 
-    context.update({
+    return {
         'custom_tab_content': content_generator(request, user),
         'tab_name': tab_settings['SLUG'],
         'page_title': page_title
-    })
-    return render_into_skin('user_profile/custom_tab.html', context, request)
+    }
 
 USER_VIEW_CALL_TABLE = {
     'stats': user_stats,
@@ -904,8 +849,7 @@ if CUSTOM_TAB:
     CUSTOM_SLUG = CUSTOM_TAB['SLUG']
     USER_VIEW_CALL_TABLE[CUSTOM_SLUG] = user_custom_tab
 
-#todo: rename this function - variable named user is everywhere
-def user(request, id, slug=None, tab_name=None):
+def user_profile(request, id, slug=None, tab_name=None, content_only=False):
     """Main user view function that works as a switchboard
 
     id - id of the profile owner
@@ -914,10 +858,14 @@ def user(request, id, slug=None, tab_name=None):
     in the code in any way
     """
     profile_owner = get_object_or_404(models.User, id = id)
-
-    if not tab_name:
-        tab_name = request.GET.get('sort', 'stats')
-
+    
+#    if request.method == "POST":
+#        tab = request.POST.get("tab", None)
+#        if not tab:
+#            raise Http404
+#        else:
+#            return USER_VIEW_CALL_TABLE[tab](request, profile_owner, {})
+    
     if askbot_settings.KARMA_MODE == 'public':
         can_show_karma = True
     elif askbot_settings.KARMA_MODE == 'hidden':
@@ -935,8 +883,6 @@ def user(request, id, slug=None, tab_name=None):
     if can_show_karma == False and tab_name == 'reputation':
         raise Http404
 
-    user_view_func = USER_VIEW_CALL_TABLE.get(tab_name, user_stats)
-
     search_state = SearchState( # Non-default SearchState with user data set
         scope=None,
         sort=None,
@@ -951,23 +897,33 @@ def user(request, id, slug=None, tab_name=None):
         'view_user': profile_owner,
         'can_show_karma': can_show_karma,
         'search_state': search_state,
-        'user_follow_feature_on': ('followit' in django_settings.INSTALLED_APPS),
+        'tab_name' : tab_name,
+        'user_follow_feature_on': True, # ('followit' in django_settings.INSTALLED_APPS),
     }
     if CUSTOM_TAB:
         context['custom_tab_name'] = CUSTOM_TAB['NAME']
         context['custom_tab_slug'] = CUSTOM_TAB['SLUG']
-    return user_view_func(request, profile_owner, context)
+    
+    for x, callback in USER_VIEW_CALL_TABLE.iteritems():
+        data = callback(request, profile_owner, context)
+        if isinstance(data, dict):
+            context.update(data)
+    
+    if content_only:
+        return render_into_skin('user_profile/user_profile_content.html', context, request, to_string=True)
+    
+    return render_into_skin('user_profile/user.html', context, request)
 
-@csrf.csrf_exempt
-def update_has_custom_avatar(request):
-    """updates current avatar type data for the user
-    """
-    if request.is_ajax() and request.user.is_authenticated():
-        if request.user.avatar_type in ('n', 'g'):
-            request.user.update_avatar_type()
-            request.session['avatar_data_updated_at'] = datetime.datetime.now()
-            return HttpResponse(simplejson.dumps({'status':'ok'}), mimetype='application/json')
-    return HttpResponseForbidden()
+#@csrf.csrf_exempt
+#def update_has_custom_avatar(request):
+#    """updates current avatar type data for the user
+#    """
+#    if request.is_ajax() and request.user.is_authenticated():
+#        if request.user.avatar_type in ('n', 'g'):
+#            request.user.update_avatar_type()
+#            request.session['avatar_data_updated_at'] = datetime.datetime.now()
+#            return HttpResponse(simplejson.dumps({'status':'ok'}), mimetype='application/json')
+#    return HttpResponseForbidden()
 
 def groups(request, id = None, slug = None):
     """output groups page
