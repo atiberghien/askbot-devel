@@ -2082,16 +2082,10 @@ class AskbotBaseProfile(models.Model):
     
     #todo: find where this is used and replace with get_absolute_url
     def get_profile_url(self):
-        """Returns the URL for this User's profile."""
-        return reverse('user_profile', kwargs={'id':self.id, 
-                                               'slug':slugify(self.user.username)})
+        return self.get_absolute_url()
     
     def get_absolute_url(self):
-        return self.get_profile_url()
-    
-    def get_profile_link(self):
-        profile_link = u'<a href="%s">%s</a>' % (self.get_profile_url(), escape(self.user.username))
-        return mark_safe(profile_link)
+        raise "Must be implemented by concrete profile"
     
     def get_groups_membership_info(self, groups):
         """returts a defaultdict with values that are
@@ -2454,35 +2448,11 @@ class AskbotProfile(AskbotBaseProfile, UserenaLanguageBaseProfile):
         else:
             object.__setattr__(self, name, value)
     
-#    @classmethod
-#    def add_to_class(cls, name, value):
-#        if hasattr(value, 'contribute_to_class'):
-#            value.contribute_to_class(cls, name)
-#        else:
-#            """
-#            All method added to Profile models was writter for User model
-#            So ``self`` is not of the good type.
-#            """
-#            if callable(value):
-#                def wrapped_method(func):
-#                    def wrapped(*args, **kwargs):
-#                        from askbot.models import get_profile_model
-#                        
-#                        new_args = []
-#                        for arg in args:
-#                            
-#                            if isinstance(arg, get_profile_model()):
-#                                new_args.append(arg.user)
-#                                info("%s must be relocated" % name)
-#                            else:
-#                                new_args.append(arg)
-#                                
-#                        return func(*new_args, **kwargs)
-#                    return wrapped
-#                
-#                value = wrapped_method(value)
-#                
-#            setattr(cls, name, value)
+    """Returns the URL for this User's profile."""
+    def get_absolute_url(self):
+        return reverse('user_profile', kwargs={'id':self.user.id, 
+                                               'slug':slugify(self.user.username)})
+    
 
 
 def create_user_profile(sender, instance, created, **kwargs):
