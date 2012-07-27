@@ -27,6 +27,15 @@ settings.register(
 settings.register(
     livesettings.BooleanValue(
         USER_SETTINGS,
+        'USER_DISPLAY_INFO',
+        default = True,
+        description = _('Allow to show/hide user ID in overview tab')
+    )
+)
+
+settings.register(
+    livesettings.BooleanValue(
+        USER_SETTINGS,
         'EDITABLE_SCREEN_NAME',
         default = True,
         description = _('Allow editing user screen name')
