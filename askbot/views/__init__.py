@@ -7,5 +7,5 @@ from askbot.views import commands
 from askbot.views import users
 from askbot.views import meta
 from django.conf import settings
-if 'avatar' in settings.INSTALLED_APPS:
-    from askbot.views import avatar_views
+#if 'avatar' in settings.INSTALLED_APPS:
+#    from askbot.views import avatar_views
