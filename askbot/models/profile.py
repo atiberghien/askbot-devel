@@ -1809,7 +1809,7 @@ class AskbotBaseProfile(models.Model):
         return askbot_settings.REPLY_BY_EMAIL and \
             self.reputation > askbot_settings.MIN_REP_TO_POST_BY_EMAIL
     
-    def get_or_create_user(self, username, email):
+    def get_or_create_fake_user(self, username, email):
         """
         Get's or creates a user, most likely with the purpose
         of posting under that account.
@@ -1819,7 +1819,11 @@ class AskbotBaseProfile(models.Model):
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
-            user = User.objects.create_user(username=username, email=email)
+            user = User()
+            user.username = username
+            user.email = email
+            user.set_unusable_password()
+            user.save()
             self.objects.create(user=user, is_fake=True)
         return user
     
