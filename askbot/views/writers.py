@@ -223,6 +223,7 @@ def ask(request):#view used to ask a new question
             if request.user.is_authenticated():
                 
                 user = form.get_post_user(request.user)
+                
                 try:
                     language_code = translation.get_language()
                     site = Site.objects.get_current()
