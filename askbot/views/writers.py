@@ -34,7 +34,6 @@ from askbot.utils import decorators
 from askbot.utils.functions import diff_date
 from askbot.utils import url_utils
 from askbot.utils.file_utils import store_file
-from askbot.utils.forms import post_as_user
 from askbot.templatetags import extra_filters_jinja as template_filters
 from askbot.importers.stackexchange import management as stackexchange#todo: may change
 from django.contrib.sites.models import Site
@@ -222,9 +221,8 @@ def ask(request):#view used to ask a new question
             ask_anonymously = form.cleaned_data['ask_anonymously']
 
             if request.user.is_authenticated():
-
-                user = post_as_user(request.user, form)
-               
+                
+                user = form.get_post_user(request.user)
                 try:
                     language_code = translation.get_language()
                     site = Site.objects.get_current()
@@ -388,7 +386,8 @@ def edit_question(request, id):
                         is_anon_edit = form.cleaned_data['stay_anonymous']
                         is_wiki = form.cleaned_data.get('wiki', question.wiki)
 
-                        user = post_as_user(request.user, form, userfield='user_author')
+                        user = form.get_post_user(request.user)
+
                         user.edit_question(
                             question = question,
                             title = form.cleaned_data['title'],
@@ -459,7 +458,7 @@ def edit_answer(request, id):
 
                 if form.is_valid():
                     if form.has_changed():
-                        user = post_as_user(request.user, form)
+                        user = form.get_post_user(request.user)
                         user.edit_answer(
                                 answer = answer,
                                 body_text = form.cleaned_data['text'],
@@ -507,7 +506,7 @@ def answer(request, id):#process a new answer
                 try:
                     follow = form.cleaned_data['email_notify']
 
-                    user = post_as_user(request.user, form)
+                    user = form.get_post_user(request.user)
 
                     answer = user.post_answer(
                                         question = question,

@@ -279,6 +279,7 @@ class AskbotBaseProfile(models.Model):
     new_response_count = models.IntegerField(default=0)
     seen_response_count = models.IntegerField(default=0)
     consecutive_days_visit_count = models.IntegerField(default=0)
+    is_fake = models.BooleanField(default=False)
     
     def strip_email_signature(self, text):
         """strips email signature from the end of the text"""
@@ -1807,7 +1808,21 @@ class AskbotBaseProfile(models.Model):
         and user has sufficient reputatiton"""
         return askbot_settings.REPLY_BY_EMAIL and \
             self.reputation > askbot_settings.MIN_REP_TO_POST_BY_EMAIL
-            
+    
+    def get_or_create_user(self, username, email):
+        """
+        Get's or creates a user, most likely with the purpose
+        of posting under that account.
+        """
+        assert(self.is_administrator())
+    
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            user = User.objects.create_user(username=username, email=email)
+            self.objects.create(user=user, is_fake=True)
+        return user
+    
     def is_administrator(self):
         """checks whether user in the forum site administrator
         the admin must be both superuser and staff member
