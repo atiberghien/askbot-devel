@@ -910,11 +910,9 @@ def get_users_info(request):
     """retuns list of user names and email addresses
     of "fake" users - so that admins can post on their
     behalf"""
-    user_info_list = models.User.objects.filter(
-                        is_fake=True
-                    ).values_list(
-                        'username',
-                        'email'
+    user_info_list = get_profile_model().objects.filter(is_fake=True).values_list(
+                        'user__username',
+                        'user__email'
                     )
 
     result_list = list()
