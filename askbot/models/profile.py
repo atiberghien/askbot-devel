@@ -1565,7 +1565,7 @@ class AskbotBaseProfile(models.Model):
     
         question.apply_edit(
             edited_at = timestamp,
-            edited_by = self,
+            edited_by = self.user,
             title = title,
             text = body_text,
             #todo: summary name clash in question and question revision
@@ -1580,7 +1580,7 @@ class AskbotBaseProfile(models.Model):
     
         award_badges_signal.send(None,
             event = 'edit_question',
-            actor = self,
+            actor = self.user,
             context_object = question,
             timestamp = timestamp
         )
@@ -1600,7 +1600,7 @@ class AskbotBaseProfile(models.Model):
             self.assert_can_edit_answer(answer)
         answer.apply_edit(
             edited_at = timestamp,
-            edited_by = self,
+            edited_by = self.user,
             text = body_text,
             comment = revision_comment,
             wiki = wiki,
@@ -1609,7 +1609,7 @@ class AskbotBaseProfile(models.Model):
         answer.thread.invalidate_cached_data()
         award_badges_signal.send(None,
             event = 'edit_answer',
-            actor = self,
+            actor = self.user,
             context_object = answer,
             timestamp = timestamp
         )
@@ -1651,7 +1651,7 @@ class AskbotBaseProfile(models.Model):
         reason.title = title
         reason.save()
         reason.details.apply_edit(
-            edited_by = self,
+            edited_by = self.user,
             edited_at = timestamp,
             text = details
         )
@@ -2037,7 +2037,7 @@ class AskbotBaseProfile(models.Model):
         ``False`` otherwise
         """
         feed_setting, created = EmailFeedSetting.objects.get_or_create(
-                                                            subscriber = self,
+                                                            subscriber = self.user,
                                                             feed_type = 'q_sel'
                                                         )
         if feed_setting.frequency == 'n':
@@ -2058,7 +2058,7 @@ class AskbotBaseProfile(models.Model):
     
             ignored_tags = Tag.objects.filter(
                                     user_selections__reason = 'bad',
-                                    user_selections__user = self
+                                    user_selections__user = self.user
                                 )
     
             wk = self.ignored_tags.strip().split()
@@ -2079,7 +2079,7 @@ class AskbotBaseProfile(models.Model):
     
             selected_tags = Tag.objects.filter(
                                     user_selections__reason = reason,
-                                    user_selections__user = self
+                                    user_selections__user = self.user
                                 )
     
             selected_by_wildcards = Tag.objects.get_by_wildcards(wk)
@@ -2137,6 +2137,7 @@ class AskbotBaseProfile(models.Model):
         """returns human readable sentence about
         number of badges of different levels earned
         by the user. It is assumed that user has some badges"""
+        print self.gold, self.silver, self.bronze
         badge_bits = list()
         if self.gold:
             bit = ungettext(
@@ -2149,14 +2150,14 @@ class AskbotBaseProfile(models.Model):
             bit = ungettext(
                     'one silver badge',
                     '%(count)d silver badges',
-                    self.gold
+                    self.silver
                 ) % {'count': self.silver}
             badge_bits.append(bit)
-        if self.silver:
+        if self.bronze:
             bit = ungettext(
                     'one bronze badge',
                     '%(count)d bronze badges',
-                    self.gold
+                    self.bronze
                 ) % {'count': self.bronze}
             badge_bits.append(bit)
     
@@ -2193,7 +2194,7 @@ class AskbotBaseProfile(models.Model):
         returns a value
         """
         try:
-            fave = FavoriteQuestion.objects.get(thread=question.thread, user=self)
+            fave = FavoriteQuestion.objects.get(thread=question.thread, user=self.user)
             fave.delete()
             result = False
             question.thread.update_favorite_count()
@@ -2202,7 +2203,7 @@ class AskbotBaseProfile(models.Model):
                 timestamp = datetime.datetime.now()
             fave = FavoriteQuestion(
                 thread = question.thread,
-                user = self,
+                user = self.user,
                 added_at = timestamp,
             )
             fave.save()
@@ -2210,7 +2211,7 @@ class AskbotBaseProfile(models.Model):
             question.thread.update_favorite_count()
             award_badges_signal.send(None,
                 event = 'select_favorite_question',
-                actor = self,
+                actor = self.user,
                 context_object = question,
                 timestamp = timestamp
             )
@@ -2219,10 +2220,10 @@ class AskbotBaseProfile(models.Model):
     
     
     def unfollow_question(self, question = None):
-        self.followed_threads.remove(question.thread)
+        self.user.followed_threads.remove(question.thread)
     
     def follow_question(self, question = None):
-        self.followed_threads.add(question.thread)
+        self.user.followed_threads.add(question.thread)
     
     def is_following_question(self, question):
         """True if user is following a question"""
@@ -2281,7 +2282,7 @@ class AskbotBaseProfile(models.Model):
         if cancel_all:
             # remove all flags
             if force == False:
-                self.user.assert_can_remove_all_flags_offensive(post = post)
+                self.assert_can_remove_all_flags_offensive(post = post)
             post_content_type = ContentType.objects.get_for_model(post)
             all_flags = Activity.objects.filter(
                             activity_type = const.TYPE_ACTIVITY_MARK_OFFENSIVE,
@@ -2292,12 +2293,12 @@ class AskbotBaseProfile(models.Model):
     
         elif cancel:#todo: can't unflag?
             if force == False:
-                self.user.assert_can_remove_flag_offensive(post = post)
+                self.assert_can_remove_flag_offensive(post = post)
             auth.onUnFlaggedItem(post, self.user, timestamp=timestamp)        
     
         else:
             if force == False:
-                self.user.assert_can_flag_offensive(post = post)
+                self.assert_can_flag_offensive(post = post)
             auth.onFlaggedItem(post, self.user, timestamp=timestamp)
             award_badges_signal.send(None,
                 event = 'flag_post',
@@ -2310,7 +2311,7 @@ class AskbotBaseProfile(models.Model):
         """return flag Activity query set
         for all flags set by te user"""
         return Activity.objects.filter(
-                            user = self,
+                            user = self.user,
                             activity_type = const.TYPE_ACTIVITY_MARK_OFFENSIVE
                         )
     
@@ -2336,17 +2337,17 @@ class AskbotBaseProfile(models.Model):
         ACTIVITY_TYPES = const.RESPONSE_ACTIVITY_TYPES_FOR_DISPLAY
         ACTIVITY_TYPES += (const.TYPE_ACTIVITY_MENTION,)
     
-        self.user.new_response_count = ActivityAuditStatus.objects.filter(
+        self.new_response_count = ActivityAuditStatus.objects.filter(
                                         user = self.user,
                                         status = ActivityAuditStatus.STATUS_NEW,
                                         activity__activity_type__in = ACTIVITY_TYPES
                                     ).count()
-        self.user.seen_response_count = ActivityAuditStatus.objects.filter(
+        self.seen_response_count = ActivityAuditStatus.objects.filter(
                                         user = self.user,
                                         status = ActivityAuditStatus.STATUS_SEEN,
                                         activity__activity_type__in = ACTIVITY_TYPES
                                     ).count()
-        self.user.save()
+        self.save()
     
     
     def receive_reputation(self, num_points):
