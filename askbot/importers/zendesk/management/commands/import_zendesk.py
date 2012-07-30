@@ -283,21 +283,6 @@ class Command(BaseCommand):
             zd_user.askbot_user_id = ab_user.id
             zd_user.save()
 
-            if zd_user.openid_url != None and \
-                'askbot.deps.django_authopenid' in settings.INSTALLED_APPS:
-                from askbot.deps.django_authopenid.models import UserAssociation
-                from askbot.deps.django_authopenid.util import get_provider_name
-                try:
-                    assoc = UserAssociation(
-                        user = ab_user,
-                        openid_url = zd_user.openid_url,
-                        provider_name = get_provider_name(zd_user.openid_url)
-                    )
-                    assoc.save()
-                except:
-                    #drop user association
-                    pass
-
             transaction.commit()
         console.print_action('%d users added' % added_users, nowipe = True)
 

@@ -33,8 +33,7 @@ def application_settings(request):
     my_settings['LOGIN_URL'] = url_utils.get_login_url()
     my_settings['LOGOUT_URL'] = url_utils.get_logout_url()
     my_settings['LOGOUT_REDIRECT_URL'] = url_utils.get_logout_redirect_url()
-    my_settings['USE_ASKBOT_LOGIN_SYSTEM'] = 'askbot.deps.django_authopenid' \
-        in settings.INSTALLED_APPS
+    my_settings['USE_ASKBOT_LOGIN_SYSTEM'] = True
     return {
         'settings': my_settings,
         'skin': get_skin(request),

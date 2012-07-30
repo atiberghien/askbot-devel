@@ -182,7 +182,6 @@ INSTALLED_APPS = (
     'django.contrib.sitemaps',
     #'debug_toolbar',
     'askbot',
-    'askbot.deps.django_authopenid',
     #'askbot.importers.stackexchange', #se loader
     'south',
     'askbot.deps.livesettings',
@@ -212,7 +211,6 @@ CACHE_MIDDLEWARE_ANONYMOUS_ONLY = True
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    'askbot.deps.django_authopenid.backends.AuthBackend',
 )
 
 # A sample logging configuration. The only tangible logging

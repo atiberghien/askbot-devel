@@ -13,7 +13,6 @@ from django.db.models import fields
 from django.db.utils import IntegrityError
 from django.db import models
 import askbot.models as askbot
-import askbot.deps.django_authopenid.models as askbot_openid
 import askbot.importers.stackexchange.models as se
 from askbot.forms import EditUserEmailFeedsForm
 from askbot.conf import settings as askbot_settings
@@ -870,26 +869,26 @@ class Command(BaseCommand):
             #if user is not registered, no association record created
             #we do not allow posting by users who are not authenticated
             #probably they'll just have to "recover" their account by email
-            if u_type != 'Unregistered':
-                try:
-                    assert(se_u.open_id)#everybody must have open_id
-                    u_openid = askbot_openid.UserAssociation()
-                    u_openid.openid_url = se_u.open_id
-                    u.save()
-                    u_openid.user = u
-                    u_openid.last_used_timestamp = se_u.last_login_date
-                    u_openid.save()
-                except AssertionError:
-                    print u'User %s (id=%d) does not have openid' % \
-                            (unidecode(se_u.display_name), se_u.id)
-                    sys.stdout.flush()
-                except IntegrityError:
-                    print "Warning: have duplicate openid: %s" % se_u.open_id
-                    sys.stdout.flush()
-
-            if se_u.open_id is None and se_u.email is None:
-                print 'Warning: SE user %d is not recoverable (no email or openid)'
-                sys.stdout.flush()
+#            if u_type != 'Unregistered':
+#                try:
+#                    assert(se_u.open_id)#everybody must have open_id
+#                    u_openid = askbot_openid.UserAssociation()
+#                    u_openid.openid_url = se_u.open_id
+#                    u.save()
+#                    u_openid.user = u
+#                    u_openid.last_used_timestamp = se_u.last_login_date
+#                    u_openid.save()
+#                except AssertionError:
+#                    print u'User %s (id=%d) does not have openid' % \
+#                            (unidecode(se_u.display_name), se_u.id)
+#                    sys.stdout.flush()
+#                except IntegrityError:
+#                    print "Warning: have duplicate openid: %s" % se_u.open_id
+#                    sys.stdout.flush()
+#
+#            if se_u.open_id is None and se_u.email is None:
+#                print 'Warning: SE user %d is not recoverable (no email or openid)'
+#                sys.stdout.flush()
 
             u.reputation = 1#se_u.reputation, it's actually re-computed
             u.last_seen = se_u.last_access_date

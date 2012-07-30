@@ -385,13 +385,6 @@ else:
         r'^%s(?P<id>\d+)/' % _('question/'), 
         views.readers.question, 
         name='question'
-    ),)
-
-if 'askbot.deps.django_authopenid' in settings.INSTALLED_APPS:
-    urlpatterns += (
-        url(r'^%s' % _('account/'), include('askbot.deps.django_authopenid.urls')),
-    )
-
 #if 'avatar' in settings.INSTALLED_APPS:
 #    #unforturately we have to wire avatar urls here,
 #    #because views add and change are adapted to

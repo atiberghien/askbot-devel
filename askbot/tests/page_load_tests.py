@@ -179,7 +179,6 @@ class PageLoadTestCase(AskbotTestCase):
                 'privacy',
                 status_code=status_code,
                 template='static_page.html')
-        self.try_url('logout', template='authopenid/logout.html')
         #todo: test different tabs
         self.try_url(
                 'tags',
@@ -391,13 +390,6 @@ class PageLoadTestCase(AskbotTestCase):
                 data={'sort':'user', 'page':1},
             )
         self.try_url(
-                'edit_user',
-                template='authopenid/signin.html',
-                kwargs={'id':4},   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
-                status_code=status_code,
-                follow=True,
-            )
-        self.try_url(
                 'faq',
                 template='faq_static.html',
                 status_code=status_code,
@@ -440,14 +432,6 @@ class PageLoadTestCase(AskbotTestCase):
             'user_profile',
             kwargs={'id': 2, 'slug': name_slug},   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
             status_code=status_code,
-            data={'sort':'inbox'},
-            template='authopenid/signin.html',
-            follow=True
-        )
-        self.try_url(
-            'user_profile',
-            kwargs={'id': 2, 'slug': name_slug},   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
-            status_code=status_code,
             data={'sort':'reputation'},
             template='user_profile/user_reputation.html'
         )
@@ -455,24 +439,8 @@ class PageLoadTestCase(AskbotTestCase):
             'user_profile',
             kwargs={'id': 2, 'slug': name_slug},   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
             status_code=status_code,
-            data={'sort':'votes'},
-            template='authopenid/signin.html',
-            follow = True
-        )
-        self.try_url(
-            'user_profile',
-            kwargs={'id': 2, 'slug': name_slug},   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
-            status_code=status_code,
             data={'sort':'favorites'},
             template='user_profile/user_favorites.html'
-        )
-        self.try_url(
-            'user_profile',
-            kwargs={'id': 2, 'slug': name_slug},   # INFO: Hardcoded ID, might fail if DB allocates IDs in some non-continuous way
-            status_code=status_code,
-            data={'sort':'email_subscriptions'},
-            template='authopenid/signin.html',
-            follow = True
         )
 
     def test_user_urls(self):
