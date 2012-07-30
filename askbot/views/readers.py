@@ -46,6 +46,7 @@ from askbot.skins.loaders import render_into_skin, get_template #jinja2 template
 # used in index page
 #todo: - take these out of const or settings
 from askbot.models import Post, Vote
+from django.contrib import messages
 
 INDEX_PAGE_SIZE = 30
 INDEX_AWARD_SIZE = 15
@@ -372,7 +373,7 @@ def question(request, id):#refactor - long subroutine. display question body, an
     try:
         question_post.assert_is_visible_to(request.user)
     except exceptions.QuestionHidden, error:
-        request.user.message_set.create(message = unicode(error))
+        messages.info(request, unicode(e))
         return HttpResponseRedirect(reverse('index'))
 
     #redirect if slug in the url is wrong
@@ -408,7 +409,7 @@ def question(request, id):#refactor - long subroutine. display question body, an
                 'Sorry, the comment you are looking for has been '
                 'deleted and is no longer accessible'
             )
-            request.user.message_set.create(message = error_message)
+            messages.error(request, error_message)
             return HttpResponseRedirect(question_post.thread.get_absolute_url())
 
         if str(show_comment.thread._question_post().id) != str(id):
@@ -418,11 +419,11 @@ def question(request, id):#refactor - long subroutine. display question body, an
         try:
             show_comment.assert_is_visible_to(request.user)
         except exceptions.AnswerHidden, error:
-            request.user.message_set.create(message = unicode(error))
+            messages.error(request, unicode(e))
             #use reverse function here because question is not yet loaded
             return HttpResponseRedirect(reverse('question', kwargs = {'id': id}))
         except exceptions.QuestionHidden, error:
-            request.user.message_set.create(message = unicode(error))
+            messages.error(request, unicode(e))
             return HttpResponseRedirect(reverse('index'))
 
     elif show_answer:
@@ -437,7 +438,7 @@ def question(request, id):#refactor - long subroutine. display question body, an
         try:
             show_post.assert_is_visible_to(request.user)
         except django_exceptions.PermissionDenied, error:
-            request.user.message_set.create(message = unicode(error))
+            messages.error(request, unicode(e))
             return HttpResponseRedirect(reverse('question', kwargs = {'id': id}))
 
     thread = question_post.thread

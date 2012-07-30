@@ -8,6 +8,7 @@ from django.conf import settings
 from django.core.urlresolvers import resolve
 from askbot.shims.django_shims import ResolverMatch
 from askbot.conf import settings as askbot_settings
+from django.contrib import messages
 
 PROTECTED_VIEW_MODULES = (
     'askbot.views',
@@ -49,9 +50,6 @@ class ForumModeMiddleware(object):
                 return
             
             if is_view_protected(resolver_match.func):
-                request.user.message_set.create(
-                    _('Please log in to use %s') % \
-                    askbot_settings.APP_SHORT_NAME
-                )
+                messages.info(request, _('Please log in to use %s') % askbot_settings.APP_SHORT_NAME)
                 return HttpResponseRedirect(settings.LOGIN_URL)
         return None

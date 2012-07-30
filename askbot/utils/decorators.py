@@ -18,6 +18,7 @@ from askbot import exceptions as askbot_exceptions
 from askbot.conf import settings as askbot_settings
 from askbot.utils import url_utils
 from askbot import get_version
+from django.contrib import messages
 
 def auto_now_timestamp(func):
     """decorator that will automatically set
@@ -128,7 +129,7 @@ def check_authorization_to_post(func_or_message):
             if request.user.is_anonymous():
                 #todo: expand for handling ajax responses
                 if askbot_settings.ALLOW_POSTING_BEFORE_LOGGING_IN == False:
-                    request.user.message_set.create(message = message)
+                    messages.info(request, message)
                     params = 'next=%s' % request.path
                     return HttpResponseRedirect(url_utils.get_login_url() + '?' + params)
             return view_func(request, *args, **kwargs)
@@ -223,7 +224,7 @@ def check_spam(field):
                                 mimetype="application/json"
                             )
                     else:
-                        request.user.message_set.create(message=spam_message)
+                        messages.info(request, spam_message)
                         return HttpResponseRedirect(reverse('index'))
 
             return view_func(request, *args, **kwargs)

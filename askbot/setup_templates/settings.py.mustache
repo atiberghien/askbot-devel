@@ -160,11 +160,11 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.request',
     'askbot.context.application_settings',
     #'django.core.context_processors.i18n',
-    'askbot.user_messages.context_processors.user_messages',#must be before auth
     'django.core.context_processors.auth', #this is required for admin
     'django.core.context_processors.csrf', #necessary for csrf protection
     
     'django.core.context_processors.static',
+    'django.contrib.messages.context_processors.messages',
 )
 
 

@@ -2978,7 +2978,7 @@ def notify_award_message(instance, created, **kwargs):
                     'user_profile':user.get_profile_url()
                 }
 
-        user.message_set.create(message=msg)
+#        user.message_set.create(message=msg)
 
 def record_answer_accepted(instance, created, **kwargs):
     """
@@ -3200,8 +3200,8 @@ def greet_new_user(user, **kwargs):
     todo: second branch should send email with a simple
     clickable link.
     """
-    if askbot_settings.NEW_USER_GREETING:
-        user.message_set.create(message = askbot_settings.NEW_USER_GREETING)
+#    if askbot_settings.NEW_USER_GREETING:
+#        user.message_set.create(message = askbot_settings.NEW_USER_GREETING)
 
     if askbot_settings.REPLY_BY_EMAIL:#with this on we also collect signature
         template_name = 'email/welcome_lamson_on.html'
@@ -3233,9 +3233,7 @@ def complete_pending_tag_subscriptions(sender, request, *args, **kwargs):
                     reason = reason,
                     action = 'add'
                 )
-        request.user.message_set.create(
-            message = _('Your tag subscription was saved, thanks!')
-        )
+        messages.info(request, _('Your tag subscription was saved, thanks!'))
 
 def add_missing_subscriptions(sender, instance, created, **kwargs):
     """``sender`` is instance of ``User``. When the ``User``
@@ -3255,7 +3253,7 @@ def post_anonymous_askbot_content(
     """signal handler, unfortunately extra parameters
     are necessary for the signal machinery, even though
     they are not used in this function"""
-    user.post_anonymous_askbot_content(session_key)
+    user.post_anonymous_askbot_content(request, session_key)
 
 #def set_user_avatar_type_flag(instance, created, **kwargs):
 #    instance.user.update_avatar_type()

@@ -1775,12 +1775,12 @@ class PostRevision(models.Model):
                     recipient_list = [self.author.email,],
                 )
                 
-            else:
-                message = _(
-                    'Your post was placed on the moderation queue '
-                    'and will be published after the moderator approval.'
-                )
-                self.author.message_set.create(message = message)
+#            else:
+#                message = _(
+#                    'Your post was placed on the moderation queue '
+#                    'and will be published after the moderator approval.'
+#                )
+#                self.author.message_set.create(message = message)
         else:
             #In this case, for now we just flag the edit
             #for the moderators.

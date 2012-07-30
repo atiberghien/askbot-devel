@@ -37,6 +37,7 @@ from askbot.utils.file_utils import store_file
 from askbot.templatetags import extra_filters_jinja as template_filters
 from askbot.importers.stackexchange import management as stackexchange#todo: may change
 from django.contrib.sites.models import Site
+from django.contrib import messages
 
 # used in index page
 INDEX_PAGE_SIZE = 20
@@ -240,7 +241,7 @@ def ask(request):#view used to ask a new question
                     )
                     return HttpResponseRedirect(question.get_absolute_url())
                 except exceptions.PermissionDenied, e:
-                    request.user.message_set.create(message = unicode(e))
+                    messages.error(request, unicode(e))
                     return HttpResponseRedirect(reverse('index'))
 
             else:
@@ -328,7 +329,7 @@ def retag_question(request, id):
             data = simplejson.dumps(response_data)
             return HttpResponse(data, mimetype="application/json")
         else:
-            request.user.message_set.create(message = unicode(e))
+            messages.error(request, unicode(e))
             return HttpResponseRedirect(question.get_absolute_url())
 
 @login_required
@@ -419,7 +420,7 @@ def edit_question(request, id):
         return render_into_skin('question_edit.html', data, request)
 
     except exceptions.PermissionDenied, e:
-        request.user.message_set.create(message = unicode(e))
+        messages.error(request, unicode(e))
         return HttpResponseRedirect(question.get_absolute_url())
 
 @login_required
@@ -481,7 +482,7 @@ def edit_answer(request, id):
         return render_into_skin('answer_edit.html', data, request)
 
     except exceptions.PermissionDenied, e:
-        request.user.message_set.create(message = unicode(e))
+        messages.error(request, unicode(e))
         return HttpResponseRedirect(answer.get_absolute_url())
 
 #todo: rename this function to post_new_answer
@@ -518,11 +519,11 @@ def answer(request, id):#process a new answer
                                     )
                     return HttpResponseRedirect(answer.get_absolute_url())
                 except askbot_exceptions.AnswerAlreadyGiven, e:
-                    request.user.message_set.create(message = unicode(e))
+                    messages.error(request, unicode(e))
                     answer = question.thread.get_answers_by_user(request.user)[0]
                     return HttpResponseRedirect(answer.get_absolute_url())
                 except exceptions.PermissionDenied, e:
-                    request.user.message_set.create(message = unicode(e))
+                    messages.error(request, unicode(e))
             else:
                 request.session.flush()
                 models.AnonymousAnswer.objects.create(

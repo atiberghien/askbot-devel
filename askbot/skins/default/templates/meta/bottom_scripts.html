@@ -12,7 +12,6 @@
     var scriptUrl = '/{{settings.ASKBOT_URL}}'
     var askbotSkin = '{{settings.ASKBOT_DEFAULT_SKIN}}';
     var enableMathJax = {% if settings.ENABLE_MATHJAX %}true{% else %}false{% endif %};
-    askbot['urls']['mark_read_message'] = '{% url "read_message" %}';
     askbot['urls']['get_tags_by_wildcard'] = '{% url "get_tags_by_wildcard" %}';
     askbot['urls']['get_tag_list'] = '{% url "get_tag_list" %}';
     askbot['urls']['follow_user'] = '/followit/follow/user/{{'{{'}}userId{{'}}'}}/';

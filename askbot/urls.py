@@ -301,11 +301,6 @@ urlpatterns = patterns('',
         name='badge'
     ),
     url(#ajax only
-        r'^%s%s$' % (_('messages/'), _('markread/')),
-        views.commands.read_message,
-        name='read_message'
-    ),
-    url(#ajax only
         r'^manage-inbox/$',
         views.commands.manage_inbox,
         name='manage_inbox'

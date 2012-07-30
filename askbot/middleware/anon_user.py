@@ -1,6 +1,4 @@
 """middleware that allows anonymous users
-receive messages using the now deprecated `message_set()`
-interface of the user objects.
 
 To allow anonymous users accept messages, a special
 message manager is defined here, and :meth:`__deepcopy__()` method
@@ -9,23 +7,8 @@ added to the :class:`AnonymousUser` so that user could be pickled.
 Secondly, it sends greeting message to anonymous users.
 """
 from django.conf import settings as django_settings
-from askbot.user_messages import create_message, get_and_delete_messages
 from askbot.conf import settings as askbot_settings
-
-class AnonymousMessageManager(object):
-    """message manager for the anonymous user"""
-    def __init__(self, request):
-        self.request = request
-
-    def create(self, message=''):
-        """send message to anonymous user"""
-        create_message(self.request, message)  
-
-    def get_and_delete(self):
-        """returns messages sent to the anonymous user
-        via session, and removes messages from the session"""
-        messages = get_and_delete_messages(self.request)
-        return messages
+from django.contrib import messages
 
 def dummy_deepcopy(*arg):
     """this is necessary to prevent deepcopy() on anonymous user object
@@ -52,9 +35,6 @@ class ConnectToSessionMessagesMiddleware(object):
             #plug on deepcopy which may be called by django db "driver"
             request.user.__deepcopy__ = dummy_deepcopy
             #here request is linked to anon user
-            request.user.message_set = AnonymousMessageManager(request)
-            request.user.get_and_delete_messages = \
-                            request.user.message_set.get_and_delete
 
             #2) set the first greeting one time per session only
             if 'greeting_set' not in request.session and \
@@ -62,7 +42,7 @@ class ConnectToSessionMessagesMiddleware(object):
 			        askbot_settings.ENABLE_GREETING_FOR_ANON_USER:
                 request.session['greeting_set'] = True
                 msg = askbot_settings.GREETING_FOR_ANONYMOUS_USER
-                request.user.message_set.create(message=msg)
+                messages.info(request, msg)
 
     def process_response(self, request, response):
         """Adds the ``'askbot_visitor'``key to cookie if user ever

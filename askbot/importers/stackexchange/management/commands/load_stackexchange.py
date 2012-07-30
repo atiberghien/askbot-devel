@@ -392,8 +392,7 @@ class Command(BaseCommand):
         mset.delete()
 
     def transfer_messages(self):
-        """transfers some messages from
-        SE to ASKBOT
+        """transfers some messages from SE to ASKBOT
         """
         for m in se.Message.objects.all().iterator():
             if m.is_read:
@@ -404,10 +403,9 @@ class Command(BaseCommand):
                 continue
             u = X.get_user(m.user)
             text = X.get_message_text(m)
-            if text:
-                u.message_set.create(
-                    message=text,
-                )
+            #FIXME: depreced in django 1.4 but request is missing to match with spec
+#            if text:
+#                u.message_set.create(message=text)
 
     def _process_post_initial_revision_group(self, rev_group):
 

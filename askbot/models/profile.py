@@ -36,6 +36,7 @@ from django.utils.safestring import mark_safe
 
 from userena.models import UserenaLanguageBaseProfile
 from django.core.urlresolvers import reverse
+from django.contrib import messages
 
 ############################################################
 ####################### TEMP ###############################
@@ -1113,7 +1114,7 @@ class AskbotBaseProfile(models.Model):
         return tag_wiki_post
     
     
-    def post_anonymous_askbot_content(self, session_key):
+    def post_anonymous_askbot_content(self, request, session_key):
         """posts any posts added just before logging in
         the posts are identified by the session key, thus the second argument
     
@@ -1133,10 +1134,10 @@ class AskbotBaseProfile(models.Model):
         else:
             if self.user.is_blocked():
                 msg = get_i18n_message('BLOCKED_USERS_CANNOT_POST')
-                self.user.message_set.create(message = msg)
+                messages.error(request, msg)
             elif self.user.is_suspended():
                 msg = get_i18n_message('SUSPENDED_USERS_CANNOT_POST')
-                self.user.message_set.create(message = msg)
+                messages.error(request, msg)
             else:
                 for aq in aq_list:
                     aq.publish(self.user)
@@ -2089,15 +2090,6 @@ class AskbotBaseProfile(models.Model):
             return questions.filter( tag_filter ).distinct()
         else:
             return questions
-    
-    def get_messages(self):
-        messages = []
-        for m in self.message_set.all():
-            messages.append(m.message)
-        return messages
-    
-    def delete_messages(self):
-        self.message_set.all().delete()
     
     #todo: find where this is used and replace with get_absolute_url
     def get_profile_url(self):

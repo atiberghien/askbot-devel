@@ -27,6 +27,8 @@ from askbot import mail
 from askbot.skins.loaders import render_into_skin, get_template
 from askbot import const
 import logging
+from userena.utils import get_profile_model
+from django.contrib import messages
 
 
 @csrf.csrf_exempt
@@ -373,15 +375,15 @@ def vote(request, id):
                 if user.is_authenticated():
                     if user not in question.thread.followed_by.all():
                         user.follow_question(question)
-                        if askbot_settings.EMAIL_VALIDATION == True \
-                            and user.email_isvalid == False:
-
-                            response_data['message'] = \
-                                    _(
-                                        'Your subscription is saved, but email address '
-                                        '%(email)s needs to be validated, please see '
-                                        '<a href="%(details_url)s">more details here</a>'
-                                    ) % {'email':user.email,'details_url':reverse('faq') + '#validate'}
+#                        if askbot_settings.EMAIL_VALIDATION == True \
+#                            and user.email_isvalid == False:
+#
+#                            response_data['message'] = \
+#                                    _(
+#                                        'Your subscription is saved, but email address '
+#                                        '%(email)s needs to be validated, please see '
+#                                        '<a href="%(details_url)s">more details here</a>'
+#                                    ) % {'email':user.email,'details_url':reverse('faq') + '#validate'}
 
                     subscribed = user.subscribe_for_followed_question_alerts()
                     if subscribed:
@@ -543,14 +545,12 @@ def subscribe_for_tags(request):
                             reason = 'good',
                             action = 'add'
                         )
-                request.user.message_set.create(
-                    message = _('Your tag subscription was saved, thanks!')
-                )
+                messages.info(request, _('Your tag subscription was saved, thanks!'))
             else:
                 message = _(
                     'Tag subscription was canceled (<a href="%(url)s">undo</a>).'
                 ) % {'url': request.path + '?tags=' + request.REQUEST['tags']}
-                request.user.message_set.create(message = message)
+                messages.info(request, message)
             return HttpResponseRedirect(reverse('index'))
         else:
             data = {'tags': tag_names}
@@ -559,7 +559,7 @@ def subscribe_for_tags(request):
         all_tag_names = pure_tag_names + wildcards
         message = _('Please sign in to subscribe for: %(tags)s') \
                     % {'tags': ', '.join(all_tag_names)}
-        request.user.message_set.create(message = message)
+        messages.info(request, message)
         request.session['subscribe_for_tags'] = (pure_tag_names, wildcards)
         return HttpResponseRedirect(url_utils.get_login_url())
 
@@ -631,7 +631,7 @@ def close(request, id):#close question
             }
             return render_into_skin('close.html', data, request)
     except exceptions.PermissionDenied, e:
-        request.user.message_set.create(message = unicode(e))
+        messages.info(request, unicode(e))
         return HttpResponseRedirect(question.get_absolute_url())
 
 @login_required
@@ -661,7 +661,7 @@ def reopen(request, id):#re-open question
             return render_into_skin('reopen.html', data, request)
 
     except exceptions.PermissionDenied, e:
-        request.user.message_set.create(message = unicode(e))
+        messages.info(request, unicode(e))
         return HttpResponseRedirect(question.get_absolute_url())
 
 
@@ -724,17 +724,6 @@ def delete_post(request):
     else:
         raise ValueError
     return {'is_deleted': post.deleted}
-
-#askbot-user communication system
-@csrf.csrf_exempt
-def read_message(request):#marks message a read
-    if request.method == "POST":
-        if request.POST['formdata'] == 'required':
-            request.session['message_silent'] = 1
-            if request.user.is_authenticated():
-                request.user.delete_messages()
-    return HttpResponse('')
-
 
 @csrf.csrf_exempt
 @decorators.ajax_only

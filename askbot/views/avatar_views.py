@@ -19,6 +19,7 @@ from avatar.views import render_primary as django_avatar_render_primary
 
 from askbot.skins.loaders import render_into_skin
 from askbot import models
+from django.contrib import messages
 
 notification = False
 if 'notification' in settings.INSTALLED_APPS:
@@ -95,8 +96,7 @@ def add(request, extra_context=None, next_override=None,
             image_file = request.FILES['avatar']
             avatar.avatar.save(image_file.name, image_file)
             avatar.save()
-            request.user.message_set.create(
-                message=_("Successfully uploaded a new avatar."))
+            messages.info(request, _("Successfully uploaded a new avatar."))
             if notification:
                 _notification_updated(request, avatar)
             return HttpResponseRedirect(next_override or _get_next(request))
@@ -136,8 +136,7 @@ def change(request, extra_context=None, next_override=None,
             avatar.primary = True
             avatar.save()
             updated = True
-            request.user.message_set.create(
-                message=_("Successfully updated your avatar."))
+            messages.info(request, _("Successfully updated your avatar."))
         if updated and notification:
             _notification_updated(request, avatar)
         return HttpResponseRedirect(next_override or _get_next(request))
@@ -176,8 +175,7 @@ def delete(request, extra_context=None, next_override=None, *args, **kwargs):
                             _notification_updated(request, a)
                         break
             Avatar.objects.filter(id__in=ids).delete()
-            request.user.message_set.create(
-                message=_("Successfully deleted the requested avatars."))
+            messages.info(request, _("Successfully deleted the requested avatars."))
             return HttpResponseRedirect(next_override or _get_next(request))
     data = {
         'avatar': avatar, 

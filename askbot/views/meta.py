@@ -20,6 +20,7 @@ from askbot.models import badges as badge_data
 from askbot.skins.loaders import get_template, render_into_skin, render_text_into_skin
 from askbot.conf import settings as askbot_settings
 from askbot import skins
+from django.contrib import messages
 
 def generic_view(request, template = None, page_class = None):
     """this may be not necessary, since it is just a rewrite of render_into_skin"""
@@ -93,7 +94,7 @@ def feedback(request):
             message = template.render(RequestContext(request, data))
             mail_moderators(_('Q&A forum feedback'), message)
             msg = _('Thanks for the feedback!')
-            request.user.message_set.create(message=msg)
+            messages.info(request, msg)
             return HttpResponseRedirect(get_next_url(request))
     else:
         form = FeedbackForm(is_auth = request.user.is_authenticated(),

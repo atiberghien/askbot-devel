@@ -46,7 +46,6 @@ def group_settings(request, group, template='livesettings/group_settings.html'):
                     if cfg.update(value):
                         # Give user feedback as to which settings were changed
                         message='Updated %s on %s' % (cfg.key, cfg.group.key)
-#                        request.user.message_set.create(message = message)
                         messages.add_message(request, messages.INFO, message)
 
                 return HttpResponseRedirect(request.path)
