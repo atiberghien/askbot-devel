@@ -472,18 +472,6 @@ def test_settings_for_test_runner():
         )
     print_errors(errors)
 
-
-def test_avatar():
-    """if "avatar" is in the installed apps,
-    checks that the module is actually installed"""
-    if 'avatar' in django_settings.INSTALLED_APPS:
-        try_import('Image', 'PIL', short_message = True)
-        try_import(
-            'avatar',
-            '-e git+git://github.com/ericflo/django-avatar.git#egg=avatar',
-            short_message = True
-        )
-
 def test_custom_user_profile_tab():
     setting_name = 'ASKBOT_CUSTOM_USER_PROFILE_TAB'
     tab_settings = getattr(django_settings, setting_name, None)
@@ -529,7 +517,6 @@ def run_startup_tests():
     test_celery()
     #test_csrf_cookie_domain()
     test_staticfiles()
-    test_avatar()
     settings_tester = SettingsTester({
         'CACHE_MIDDLEWARE_ANONYMOUS_ONLY': {
             'value': True,

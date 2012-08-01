@@ -319,7 +319,7 @@ def edit_user(request, id):
         'page_class': 'user-profile-edit-page',
         'form' : form,
         'marked_tags_setting': askbot_settings.MARKED_TAGS_ARE_PUBLIC_WHEN,
-        'support_custom_avatars': ('avatar' in django_settings.INSTALLED_APPS),
+        'support_custom_avatars': False,
         'view_user': user,
     }
     return render_into_skin('user_profile/user_edit.html', data, request)
@@ -661,7 +661,6 @@ def user_responses(request, user, context):
                                                  .select_related('activity',
                                                                  'activity__content_type',
                                                                  'activity__question__thread',
-                                                                 #'activity__user__gravatar',
                                                                  'activity__user')\
                                                 .order_by('-activity__active_at')[:const.USER_VIEW_DATA_SIZE]
 
@@ -913,17 +912,6 @@ def user_profile(request, id, slug=None, tab_name=None, content_only=False):
         return render_into_skin('user_profile/user_profile_content.html', context, request, to_string=True)
     
     return render_into_skin('user_profile/user.html', context, request)
-
-#@csrf.csrf_exempt
-#def update_has_custom_avatar(request):
-#    """updates current avatar type data for the user
-#    """
-#    if request.is_ajax() and request.user.is_authenticated():
-#        if request.user.avatar_type in ('n', 'g'):
-#            request.user.update_avatar_type()
-#            request.session['avatar_data_updated_at'] = datetime.datetime.now()
-#            return HttpResponse(simplejson.dumps({'status':'ok'}), mimetype='application/json')
-#    return HttpResponseForbidden()
 
 def groups(request, id = None, slug = None):
     """output groups page

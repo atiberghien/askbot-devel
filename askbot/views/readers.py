@@ -179,7 +179,7 @@ def questions(request, **kwargs):
             },
             'paginator': paginator_html,
             'question_counter': question_counter,
-            'faces': [],#[extra_tags.gravatar(contributor, 48) for contributor in contributors],
+            'faces': [],
             'feed_url': context_feed_url,
             'query_string': search_state.query_string(),
             'page_size' : page_size,
@@ -222,7 +222,6 @@ def questions(request, **kwargs):
             'font_size' : extra_tags.get_tag_font_size(related_tags),
             'display_tag_filter_strategy_choices': const.TAG_DISPLAY_FILTER_STRATEGY_CHOICES,
             'email_tag_filter_strategy_choices': const.TAG_EMAIL_FILTER_STRATEGY_CHOICES,
-#            'update_avatar_data': schedules.should_update_avatar_data(request),
             'query_string': search_state.query_string(),
             'search_state': search_state,
             'feed_url': context_feed_url,
@@ -542,9 +541,7 @@ def question(request, id):#refactor - long subroutine. display question body, an
         }
     )
 
-    user_can_post_comment = (
-        request.user.is_authenticated() and request.user.can_post_comment()
-    )
+    user_can_post_comment =  request.user.is_authenticated() and request.user.can_post_comment()
 
     user_already_gave_answer = False
     previous_answer = None

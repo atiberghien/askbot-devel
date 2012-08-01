@@ -72,7 +72,6 @@ def faq(request):
         )
     else:
         data = {
-#            'gravatar_faq_url': reverse('faq') + '#gravatar',
             'ask_question_url': reverse('ask'),
             'page_class': 'meta',
         }

@@ -191,7 +191,6 @@ INSTALLED_APPS = (
     'djcelery',
     'djkombu',
     'followit',
-    #'avatar',#experimental use git clone git://github.com/ericflo/django-avatar.git$
 
     'django_extensions'
 )

@@ -1,48 +1,8 @@
 import math
 from django import template
-from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext as _
-from django.core.urlresolvers import reverse
-from askbot.utils import functions
-from askbot.utils.slug import slugify
 from askbot.skins.loaders import get_template
-from askbot.conf import settings as askbot_settings
 
 register = template.Library()
-
-GRAVATAR_TEMPLATE = (
-                     '<a style="text-decoration:none" '
-                     'href="%(user_profile_url)s"><img class="gravatar" '
-                     'width="%(size)s" height="%(size)s" '
-                     'src="http://www.gravatar.com/avatar/%(gravatar_hash)s'
-                     '?s=%(size)s&amp;d=%(gravatar_type)s&amp;r=PG" '
-                     'title="%(username)s" '
-                     'alt="%(alt_text)s" /></a>')
-
-@register.simple_tag
-def gravatar(user, size):
-    """
-    Creates an ``<img>`` for a user's Gravatar with a given size.
-
-    This tag can accept a User object, or a dict containing the
-    appropriate values.
-    """
-    #todo: rewrite using get_from_dict_or_object
-    user_id = functions.get_from_dict_or_object(user, 'id')
-    slug = slugify(user.username)
-    user_profile_url = reverse(
-                        'user_profile',
-                        kwargs={'id':user_id, 'slug':slug}
-                    )
-    #safe_username = template.defaultfilters.urlencode(username)
-    return mark_safe(GRAVATAR_TEMPLATE % {
-        'user_profile_url': user_profile_url,
-        'size': size,
-        'gravatar_hash': functions.get_from_dict_or_object(user, 'gravatar'),
-        'gravatar_type': askbot_settings.GRAVATAR_TYPE,
-        'alt_text': _('%(username)s gravatar image') % {'username': user.username},
-        'username': functions.get_from_dict_or_object(user, 'username'),
-    })
     
 @register.simple_tag
 def get_tag_font_size(tags):
@@ -99,8 +59,7 @@ def include_jinja(parser, token):
 
     #Check if a filename was given
     if len(bits) != 3:
-        error_message = '%r tag requires the name of the ' + \
-                        'template and the request variable'
+        error_message = '%r tag requires the name of the template and the request variable'
         raise template.TemplateSyntaxError(error_message % bits[0])
     filename = bits[1]
     request_var = bits[2]
@@ -111,5 +70,6 @@ def include_jinja(parser, token):
     else:
         raise template.TemplateSyntaxError('file name must be quoted')
 
+    
     return IncludeJinja(filename, request_var)
 

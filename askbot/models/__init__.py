@@ -313,16 +313,6 @@ def notify_author_of_published_revision(
     if revision.should_notify_author_about_publishing(was_approved):
         from askbot.tasks import notify_author_of_published_revision_celery_task
         notify_author_of_published_revision_celery_task.delay(revision)
-    
-
-##todo: move to utils
-#def calculate_gravatar_hash(instance, **kwargs):
-#    """Calculates a User's gravatar hash from their email address."""
-#    if kwargs.get('raw', False):
-#        return
-#    clean_email = instance.email.strip().lower()
-#    instance.gravatar = hashlib.md5(clean_email).hexdigest()
-
 
 def record_post_update_activity(
         post,
@@ -720,11 +710,6 @@ django_signals.post_save.connect(notify_award_message, sender=Award)
 django_signals.post_save.connect(record_answer_accepted, sender=Post)
 django_signals.post_save.connect(record_vote, sender=Vote)
 django_signals.post_save.connect(record_favorite_question, sender=FavoriteQuestion)
-
-#if 'avatar' in django_settings.INSTALLED_APPS:
-#    from avatar.models import Avatar
-#    django_signals.post_save.connect(set_user_avatar_type_flag,sender=Avatar)
-#    django_signals.post_delete.connect(update_user_avatar_type_flag, sender=Avatar)
 
 django_signals.post_delete.connect(record_cancel_vote, sender=Vote)
 
