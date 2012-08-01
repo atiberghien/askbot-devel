@@ -657,13 +657,6 @@ def complete_pending_tag_subscriptions(sender, request, *args, **kwargs):
                 )
         messages.info(request, _('Your tag subscription was saved, thanks!'))
 
-def add_missing_subscriptions(sender, instance, created, **kwargs):
-    """``sender`` is instance of ``User``. When the ``User``
-    is created, any required email subscription settings will be
-    added by this handler"""
-    if created:
-        instance.add_missing_askbot_subscriptions()
-
 def post_anonymous_askbot_content(
                                 sender,
                                 request,
@@ -677,34 +670,7 @@ def post_anonymous_askbot_content(
     they are not used in this function"""
     user.post_anonymous_askbot_content(request, session_key)
 
-#def set_user_avatar_type_flag(instance, created, **kwargs):
-#    instance.user.update_avatar_type()
-#
-#def update_user_avatar_type_flag(instance, **kwargs):
-#    instance.user.update_avatar_type()
 
-def make_admin_if_first_user(instance, **kwargs):
-    """first user automatically becomes an administrator
-    the function is run only once in the interpreter session
-    """    
-    import sys
-    #have to check sys.argv to satisfy the test runner
-    #which fails with the cache-based skipping
-    #for real the setUp() code in the base test case must
-    #clear the cache!!!
-    if 'test' not in sys.argv and cache.cache.get('admin-created'):
-        #no need to hit the database every time!
-        return
-    user_count = User.objects.all().count()
-    if user_count == 0:
-        instance.set_admin_status()
-    cache.cache.set('admin-created', True)
-
-
-#signal for User model save changes
-django_signals.pre_save.connect(make_admin_if_first_user, sender=User)
-#django_signals.pre_save.connect(calculate_gravatar_hash, sender=User)
-django_signals.post_save.connect(add_missing_subscriptions, sender=User)
 django_signals.post_save.connect(record_award_event, sender=Award)
 django_signals.post_save.connect(notify_award_message, sender=Award)
 django_signals.post_save.connect(record_answer_accepted, sender=Post)

@@ -14,6 +14,8 @@ from django.utils.translation import ungettext
 
 from django_countries.fields import CountryField
 
+from django.core import cache
+
 from askbot import auth
 from askbot import const
 from askbot import exceptions as askbot_exceptions
@@ -37,6 +39,7 @@ from django.utils.safestring import mark_safe
 from userena.models import UserenaLanguageBaseProfile
 from django.core.urlresolvers import reverse
 from django.contrib import messages
+from userena.utils import get_profile_model
 
 ############################################################
 ####################### TEMP ###############################
@@ -2170,7 +2173,7 @@ class AskbotBaseProfile(models.Model):
                         {'item1': badge_str, 'item2': last_bit}
         else:
             raise ValueError('user must have badges to call this function')
-        return _("%(user)s has %(badges)s") % {'user': self.username, 'badges':badge_str}
+        return _("%(user)s has %(badges)s") % {'user': self.user.username, 'badges':badge_str}
     
     #series of methods for user vote-type commands
     #same call signature func(self, post, timestamp=None, cancel=None)
@@ -2425,16 +2428,38 @@ class AskbotBaseProfile(models.Model):
     class Meta:
         abstract = True
 
+
+def add_missing_subscriptions(sender, instance, created, **kwargs):
+    """``sender`` is instance of ``User``. When the ``User``
+    is created, any required email subscription settings will be
+    added by this handler"""
+    if created:
+        instance.add_missing_askbot_subscriptions()
+        
+def make_admin_if_first_user(instance, **kwargs):
+    """first user automatically becomes an administrator
+    the function is run only once in the interpreter session
+    """    
+    import sys
+    #have to check sys.argv to satisfy the test runner
+    #which fails with the cache-based skipping
+    #for real the setUp() code in the base test case must
+    #clear the cache!!!
+    if 'test' not in sys.argv and cache.cache.get('admin-created'):
+        #no need to hit the database every time!
+        return
+    user_count = User.objects.all().count()
+    if user_count == 0:
+        instance.set_admin_status()
+    cache.cache.set('admin-created', True)
+
+
 class AskbotProfile(AskbotBaseProfile, UserenaLanguageBaseProfile):
     """
     Profile model example
     """
     user = models.OneToOneField(User)
     
-#    email_isvalid = models.BooleanField(default=False)
-#    email_key = models.CharField(max_length=32, null=True)
-#    gravatar = models.CharField(max_length=32)
-#    avatar_type = models.CharField(max_length=1, choices=const.AVATAR_STATUS_CHOICE, default='n')
     real_name = models.CharField(max_length=100, blank=True)
     website = models.URLField(max_length=200, blank=True)
     location = models.CharField(max_length=100, blank=True)
@@ -2466,7 +2491,6 @@ class AskbotProfile(AskbotBaseProfile, UserenaLanguageBaseProfile):
                                                'slug':slugify(self.user.username)})
     
 
-
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         AskbotProfile.objects.create(user=instance)
@@ -2482,7 +2506,12 @@ def propragate_user_save(sender, instance, created, **kwargs):
 
 if django_settings.AUTH_PROFILE_MODULE == "askbot.AskbotProfile":
     django_signals.post_save.connect(create_user_profile, sender=User)
+    django_signals.pre_save.connect(make_admin_if_first_user, sender=AskbotProfile)
+    django_signals.post_save.connect(add_missing_subscriptions, sender=AskbotProfile)
+    
     
     
 if django_settings.AUTH_PROFILE_MODULE != "auth.User":
     django_signals.post_save.connect(propragate_user_save, sender=User)
+    
+    
