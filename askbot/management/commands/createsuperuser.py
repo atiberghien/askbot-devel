@@ -1,7 +1,7 @@
 from django.contrib.auth.management.commands.createsuperuser import *
 from django.db.models.signals import pre_save, post_save
 from django.conf import settings as django_settings
-from askbot.models import get_profile_model
+from userena.utils import get_profile_model
 
 class Command(Command):
 
