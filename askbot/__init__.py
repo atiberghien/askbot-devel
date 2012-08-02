@@ -34,16 +34,16 @@ REQUIREMENTS = {
     'pytz': 'pytz',
 }
 
-#necessary for interoperability of django and coffin
-try:
-    from askbot import patches
-    from askbot.deployment.assertions import assert_package_compatibility
-    assert_package_compatibility()
-    patches.patch_django()
-    patches.patch_coffin()  # must go after django
-except ImportError:
-
-    pass
+##necessary for interoperability of django and coffin
+#try:
+#    from askbot import patches
+#    from askbot.deployment.assertions import assert_package_compatibility
+#    assert_package_compatibility()
+#    patches.patch_django()
+#    patches.patch_coffin()  # must go after django
+#except ImportError:
+#
+#    pass
 
 
 def get_install_directory():
