@@ -16,7 +16,7 @@ from django.core.paginator import Paginator, EmptyPage, InvalidPage
 from django.template import Context
 from django.utils import simplejson
 from django.utils.html import escape
-from django.utils.translation import ugettext as _
+from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import ungettext
 from django.utils import translation
 from django.views.decorators import csrf
@@ -38,7 +38,6 @@ from askbot.utils import functions
 from askbot.utils.html import sanitize_html
 from askbot.utils.decorators import anonymous_forbidden, ajax_only, get_only
 from askbot.search.state_manager import SearchState, DummySearchState
-from askbot.templatetags import extra_tags
 import askbot.conf
 from askbot.conf import settings as askbot_settings
 from askbot.skins.loaders import render_into_skin, get_template #jinja2 template loading enviroment
@@ -47,6 +46,7 @@ from askbot.skins.loaders import render_into_skin, get_template #jinja2 template
 #todo: - take these out of const or settings
 from askbot.models import Post, Vote
 from django.contrib import messages
+from askbot.utils.functions import get_tag_font_size
 
 INDEX_PAGE_SIZE = 30
 INDEX_AWARD_SIZE = 15
@@ -219,7 +219,7 @@ def questions(request, **kwargs):
             'tab_id' : search_state.sort,
             'tags' : related_tags,
             'tag_list_type' : tag_list_type,
-            'font_size' : extra_tags.get_tag_font_size(related_tags),
+            'font_size' : get_tag_font_size(related_tags),
             'display_tag_filter_strategy_choices': const.TAG_DISPLAY_FILTER_STRATEGY_CHOICES,
             'email_tag_filter_strategy_choices': const.TAG_EMAIL_FILTER_STRATEGY_CHOICES,
             'query_string': search_state.query_string(),
@@ -304,7 +304,7 @@ def tags(request):#view showing a listing of available tags - plain list
                 else:
                     tags = models.Tag.objects.all().filter(deleted=False).exclude(used_count=0).order_by("-used_count")
 
-        font_size = extra_tags.get_tag_font_size(tags)
+        font_size = get_tag_font_size(tags)(tags)
 
         data = {
             'active_tab': 'tags',

@@ -1,8 +1,47 @@
 import re
 import datetime
-from django.utils.translation import ugettext as _
+import math
+from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import ungettext
 from django.contrib.auth.models import User
+
+
+def get_tag_font_size(tags):
+    max_tag = 0
+    for tag in tags:
+        if tag.used_count > max_tag:
+            max_tag = tag.used_count
+
+    min_tag = max_tag
+    for tag in tags:
+        if tag.used_count < min_tag:
+            min_tag = tag.used_count
+
+    font_size = {}
+    for tag in tags:
+        font_size[tag.name] = tag_font_size(max_tag,min_tag,tag.used_count)
+    
+    return font_size
+
+
+def tag_font_size(max_size, min_size, current_size):
+    """
+    do a logarithmic mapping calcuation for a proper size for tagging cloud
+    Algorithm from http://blogs.dekoh.com/dev/2007/10/29/choosing-a-good-
+    font-size-variation-algorithm-for-your-tag-cloud/
+    """
+    MAX_FONTSIZE = 10
+    MIN_FONTSIZE = 1
+
+    #avoid invalid calculation
+    if current_size == 0:
+        current_size = 1    
+    try:
+        weight = (math.log10(current_size) - math.log10(min_size)) / (math.log10(max_size) - math.log10(min_size))
+    except Exception:
+        weight = 0
+        
+    return int(MIN_FONTSIZE + round((MAX_FONTSIZE - MIN_FONTSIZE) * weight))
 
 def get_from_dict_or_object(source, key):
     try:

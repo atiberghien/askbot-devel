@@ -5,8 +5,7 @@ from django.db import connection
 from django.db.models import Q, F
 from askbot.models import User, Post, PostRevision, Thread
 from askbot.models import Activity, EmailFeedSetting
-from django.utils.translation import ugettext as _
-from django.utils.translation import ungettext
+from django.utils.translation import ungettext, ugettext as _
 from django.conf import settings as django_settings
 from askbot.conf import settings as askbot_settings
 from django.utils.datastructures import SortedDict
@@ -14,6 +13,7 @@ from django.contrib.contenttypes.models import ContentType
 from askbot import const
 from askbot import mail
 from askbot.utils.slug import slugify
+from userena.utils import get_profile_model
 
 DEBUG_THIS_COMMAND = False
 
@@ -90,12 +90,8 @@ class Command(NoArgsCommand):
         according to their subscriptions and recorded question
         views
         """
-
-        user_feeds = EmailFeedSetting.objects.filter(
-                                                subscriber=user
-                                            ).exclude(
-                                                frequency__in=('n', 'i')
-                                            )
+        
+        user_feeds = EmailFeedSetting.objects.filter(subscriber=user).exclude(frequency__in=('n', 'i'))
 
         should_proceed = False
         for feed in user_feeds:
@@ -127,15 +123,11 @@ class Command(NoArgsCommand):
         #base question query set for this user
         #basic things - not deleted, not closed, not too old
         #not last edited by the same user
-        base_qs = Post.objects.get_questions().exclude(
-                                thread__last_activity_by=user
-                            ).exclude(
-                                thread__last_activity_at__lt=user.date_joined#exclude old stuff
-                            ).exclude(
-                                deleted=True
-                            ).exclude(
-                                thread__closed=True
-                            ).order_by('-thread__last_activity_at')
+        base_qs = Post.objects.get_questions().exclude(thread__last_activity_by=user)\
+                                              .exclude(thread__last_activity_at__lt=user.date_joined)\
+                                              .exclude(deleted=True)\
+                                              .exclude(thread__closed=True)\
+                                              .order_by('-thread__last_activity_at')\
 
         if askbot_settings.ENABLE_CONTENT_MODERATION:
             base_qs = base_qs.filter(approved = True)
@@ -393,7 +385,8 @@ class Command(NoArgsCommand):
     def send_email_alerts(self):
         #does not change the database, only sends the email
         #todo: move this to template
-        for user in User.objects.all():
+        for profile in get_profile_model().objects.all():
+            user = profile.user
             user.add_missing_askbot_subscriptions()
             #todo: q_list is a dictionary, not a list
             q_list = self.get_updated_questions_for_user(user)
