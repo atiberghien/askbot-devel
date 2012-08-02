@@ -340,7 +340,7 @@ settings.register(
         FORUM_DATA_RULES,
         'UNANSWERED_QUESTION_MEANING',
         choices=const.UNANSWERED_QUESTION_MEANING_CHOICES,
-        default='NO_ACCEPTED_ANSWERS',
+        default='NO_ANSWERS',
         description=_('What should "unanswered question" mean?')
     )
 )
