@@ -373,7 +373,7 @@ def question(request, id):#refactor - long subroutine. display question body, an
         question_post.assert_is_visible_to(request.user)
     except exceptions.QuestionHidden, error:
         messages.info(request, unicode(e))
-        return HttpResponseRedirect(reverse('index'))
+        return HttpResponseRedirect(reverse('forum-index'))
 
     #redirect if slug in the url is wrong
     if request.path.split('/')[-2] != question_post.slug:
@@ -423,7 +423,7 @@ def question(request, id):#refactor - long subroutine. display question body, an
             return HttpResponseRedirect(reverse('question', kwargs = {'id': id}))
         except exceptions.QuestionHidden, error:
             messages.error(request, unicode(e))
-            return HttpResponseRedirect(reverse('index'))
+            return HttpResponseRedirect(reverse('forum-index'))
 
     elif show_answer:
         #if the url calls to view a particular answer to 

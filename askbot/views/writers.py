@@ -155,7 +155,7 @@ def __import_se_data(dump_file):
     read_stdout.close()
     dump_file.close()
     sys.stdout = real_stdout
-    yield '<p>Done. Please, <a href="%s">Visit Your Forum</a></p></body></html>' % reverse('index')
+    yield '<p>Done. Please, <a href="%s">Visit Your Forum</a></p></body></html>' % reverse('forum-index')
 
 @csrf.csrf_protect
 def import_data(request):
@@ -242,7 +242,7 @@ def ask(request):#view used to ask a new question
                     return HttpResponseRedirect(question.get_absolute_url())
                 except exceptions.PermissionDenied, e:
                     messages.error(request, unicode(e))
-                    return HttpResponseRedirect(reverse('index'))
+                    return HttpResponseRedirect(reverse('forum-index'))
 
             else:
                 request.session.flush()

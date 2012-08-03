@@ -130,7 +130,7 @@ def manage_inbox(request):
                 raise exceptions.PermissionDenied('must use POST request')
         else:
             #todo: show error page but no-one is likely to get here
-            return HttpResponseRedirect(reverse('index'))
+            return HttpResponseRedirect(reverse('forum-index'))
     except Exception, e:
         message = unicode(e)
         if message == '':
@@ -551,7 +551,7 @@ def subscribe_for_tags(request):
                     'Tag subscription was canceled (<a href="%(url)s">undo</a>).'
                 ) % {'url': request.path + '?tags=' + request.REQUEST['tags']}
                 messages.info(request, message)
-            return HttpResponseRedirect(reverse('index'))
+            return HttpResponseRedirect(reverse('forum-index'))
         else:
             data = {'tags': tag_names}
             return render_into_skin('subscribe_for_tags.html', data, request)
