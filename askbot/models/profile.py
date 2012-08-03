@@ -50,21 +50,7 @@ Call on user a automatically redirect to related profile if the field is not ava
 All redirection are logged in order to track call redirection.
 Step by step, it will be necessary to rewrite/adapt each piece of code that generation a redirection.
 """
-
-def info(msg):
-    import inspect
-    import logging
-    logger = logging.getLogger('refactoring')
-    try:
-        frm = inspect.stack()[2]
-        caller = frm[3]
-        line = frm[2]
-        mod = inspect.getmodule(frm[0]).__name__
-        info = "%s.%s@%s" % (mod, caller, line)
-        if mod.startswith('askbot'):
-            logger.info("[%s] %s" % (info, msg))
-    except:
-        pass
+debug_logger = logging.getLogger("debug")
 
 def user_setattr(self, name, value):
     if '_profile_cache' in self.__dict__:
@@ -73,8 +59,6 @@ def user_setattr(self, name, value):
            name in profile.__dict__ and \
            name != 'profile_must_be_saved':
 
-            info("setattr %s" % name)
-
             object.__setattr__(profile, name, value)
             self.profile_must_be_saved = True
             return
@@ -82,8 +66,8 @@ def user_setattr(self, name, value):
     object.__setattr__(self, name, value)
 
 def user_getattr(self, name):
-    info("getattr %s" % name)
-    
+    if not name.startswith("_"):
+        logging.getLogger("debug").debug("Askbot refactoring needed : %s" % name)
     profile = object.__getattribute__(self, 'get_profile')()
     return object.__getattribute__(profile, name)
 
