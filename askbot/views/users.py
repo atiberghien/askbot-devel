@@ -744,7 +744,7 @@ def user_reputation(request, user, context):
     # prepare data for the graph - last values go in first
     rep_list = ['[%s,%s]' % (calendar.timegm(datetime.datetime.now().timetuple()) * 1000, user.get_profile().reputation)]
     for rep in reputes:
-        rep_list.append('[%s,%s]' % (calendar.timegm(rep.reputed_at.timetuple()) * 1000, rep.get_profile().reputation))
+        rep_list.append('[%s,%s]' % (calendar.timegm(rep.reputed_at.timetuple()) * 1000, rep.reputation))
     reps = ','.join(rep_list)
     reps = '[%s]' % reps
 

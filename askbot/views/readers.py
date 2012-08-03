@@ -304,7 +304,7 @@ def tags(request):#view showing a listing of available tags - plain list
                 else:
                     tags = models.Tag.objects.all().filter(deleted=False).exclude(used_count=0).order_by("-used_count")
 
-        font_size = get_tag_font_size(tags)(tags)
+        font_size = get_tag_font_size(tags)
 
         data = {
             'active_tab': 'tags',
