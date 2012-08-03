@@ -895,7 +895,7 @@ def user_profile(request, id, slug=None, tab_name=None, content_only=False):
     context.update(user_stats(request, profile_owner, context))
     context.update(user_recent(request, profile_owner, context))
     context.update(user_responses(request, profile_owner, context))
-#    context.update(user_network(request, profile_owner, context))
+    context.update(user_network(request, profile_owner, context))
     context.update(user_reputation(request, profile_owner, context))
     context.update(user_favorites(request, profile_owner, context))
     context.update(user_votes(request, profile_owner, context))
