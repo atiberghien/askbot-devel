@@ -718,22 +718,8 @@ def user_network(request, user, context):
 
 @owner_or_moderator_required
 def user_votes(request, user, context):
-    votes = []
-    for vote in user.votes.all():
-        post = vote.voted_post
-        vote.title = post.thread.title
-        if post.is_question():
-            vote.question_id = post.id
-            vote.answer_id = 0
-        elif post.is_answer():
-            vote.question_id = post.thread._question_post().id
-            vote.answer_id = post.id
-        votes.append(vote)
-
-    votes.sort(key=operator.attrgetter('id'), reverse=True)
-
     data = {
-        'votes' : votes[:const.USER_VIEW_DATA_SIZE]
+        'votes' : models.Vote.objects.filter(user=user).order_by('-voted_at')[:const.USER_VIEW_DATA_SIZE]
     }
     return data
 
