@@ -326,6 +326,10 @@ def question(request, id):#refactor - long subroutine. display question body, an
     """view that displays body of the question and
     all answers to it
     """
+    
+    language_code = translation.get_language()
+    site = Site.objects.get_current()
+    
     #process url parameters
     #todo: fix inheritance of sort method from questions
     #before = datetime.datetime.now()
@@ -343,14 +347,18 @@ def question(request, id):#refactor - long subroutine. display question body, an
     try:
         question_post = models.Post.objects.filter(
                                 post_type = 'question',
-                                id = id
+                                id = id,
+                                thread__language_code=language_code,
+                                thread__site=site,
                             ).select_related('thread')[0]
     except IndexError:
     # Handle URL mapping - from old Q/A/C/ URLs to the new one
         try:
             question_post = models.Post.objects.filter(
                                     post_type='question',
-                                    old_question_id = id
+                                    old_question_id = id,
+                                    thread__language_code=language_code,
+                                    thread__site=site,
                                 ).select_related('thread')[0]
         except IndexError:
             raise Http404
