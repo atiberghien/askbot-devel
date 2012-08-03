@@ -25,6 +25,7 @@ from askbot.skins.loaders import get_template #jinja2 template loading enviromen
 from askbot.search.state_manager import DummySearchState
 from userena.utils import get_profile_model
 from django.contrib.sites.models import Site
+from django.utils import translation
 
 
 class ThreadManager(models.Manager):
@@ -657,8 +658,13 @@ class Thread(models.Model):
             # todo: code in this function would be simpler if
             # we had question post id denormalized on the thread
             tags_list = self.get_tag_names()
+            language_code = translation.get_language()
+            
+            site = Site.objects.get_current()
             similar_threads = Thread.objects.filter(
-                                        tags__name__in=tags_list
+                                        tags__name__in=tags_list,
+                                        language_code=language_code,
+                                        site=site,
                                     ).exclude(
                                         id = self.id
                                     ).exclude(
