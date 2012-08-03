@@ -21,7 +21,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.urlresolvers import reverse
 from django.shortcuts import get_object_or_404
 from django.http import Http404, HttpResponseRedirect
-from django.utils.translation import ugettext as _
+from django.utils.translation import ugettext_lazy as _
 from django.utils import simplejson
 from django.views.decorators import csrf
 
@@ -36,8 +36,7 @@ from askbot.conf import settings as askbot_settings
 from askbot import models
 from askbot import exceptions
 from askbot.models.badges import award_badges_signal
-from askbot.skins.loaders import render_into_skin, render_text_into_skin
-from askbot.templatetags import extra_tags
+from askbot.skins.loaders import render_into_skin
 from askbot.search.state_manager import SearchState
 from askbot.utils import url_utils
 from askbot.utils.loading import load_module
@@ -828,22 +827,22 @@ def user_custom_tab(request, user, context):
         'page_title': page_title
     }
 
-USER_VIEW_CALL_TABLE = {
-    'stats': user_stats,
-    'recent': user_recent,
-    'inbox': user_responses,
-    'network': user_network,
-    'reputation': user_reputation,
-    'favorites': user_favorites,
-    'votes': user_votes,
-    'email_subscriptions': user_email_subscriptions,
-    'moderation': user_moderate,
-}
+#USER_VIEW_CALL_TABLE = {
+#    'stats': user_stats,
+#    'recent': user_recent,
+#    'inbox': user_responses,
+#    'network': user_network,
+#    'reputation': user_reputation,
+#    'favorites': user_favorites,
+#    'votes': user_votes,
+#    'email_subscriptions': user_email_subscriptions,
+#    'moderation': user_moderate,
+#}
 
-CUSTOM_TAB = getattr(django_settings, 'ASKBOT_CUSTOM_USER_PROFILE_TAB', None)
-if CUSTOM_TAB:
-    CUSTOM_SLUG = CUSTOM_TAB['SLUG']
-    USER_VIEW_CALL_TABLE[CUSTOM_SLUG] = user_custom_tab
+#CUSTOM_TAB = getattr(django_settings, 'ASKBOT_CUSTOM_USER_PROFILE_TAB', None)
+#if CUSTOM_TAB:
+#    CUSTOM_SLUG = CUSTOM_TAB['SLUG']
+#    USER_VIEW_CALL_TABLE[CUSTOM_SLUG] = user_custom_tab
 
 def user_profile(request, id, slug=None, tab_name=None, content_only=False):
     """Main user view function that works as a switchboard
@@ -854,13 +853,6 @@ def user_profile(request, id, slug=None, tab_name=None, content_only=False):
     in the code in any way
     """
     profile_owner = get_object_or_404(models.User, id = id)
-    
-#    if request.method == "POST":
-#        tab = request.POST.get("tab", None)
-#        if not tab:
-#            raise Http404
-#        else:
-#            return USER_VIEW_CALL_TABLE[tab](request, profile_owner, {})
     
     if askbot_settings.KARMA_MODE == 'public':
         can_show_karma = True
@@ -896,14 +888,19 @@ def user_profile(request, id, slug=None, tab_name=None, content_only=False):
         'tab_name' : tab_name,
         'user_follow_feature_on': True, # ('followit' in django_settings.INSTALLED_APPS),
     }
-    if CUSTOM_TAB:
-        context['custom_tab_name'] = CUSTOM_TAB['NAME']
-        context['custom_tab_slug'] = CUSTOM_TAB['SLUG']
+#    if CUSTOM_TAB:
+#        context['custom_tab_name'] = CUSTOM_TAB['NAME']
+#        context['custom_tab_slug'] = CUSTOM_TAB['SLUG']
     
-    for x, callback in USER_VIEW_CALL_TABLE.iteritems():
-        data = callback(request, profile_owner, context)
-        if isinstance(data, dict):
-            context.update(data)
+    context.update(user_stats(request, profile_owner, context))
+    context.update(user_recent(request, profile_owner, context))
+    context.update(user_responses(request, profile_owner, context))
+#    context.update(user_network(request, profile_owner, context))
+    context.update(user_reputation(request, profile_owner, context))
+    context.update(user_favorites(request, profile_owner, context))
+    context.update(user_votes(request, profile_owner, context))
+    context.update(user_email_subscriptions(request, profile_owner, context))
+    context.update(user_moderate(request, profile_owner, context))
     
     if content_only:
         return render_into_skin('user_profile/user_profile_content.html', context, request, to_string=True)
