@@ -2140,7 +2140,6 @@ class AskbotBaseProfile(models.Model):
         """returns human readable sentence about
         number of badges of different levels earned
         by the user. It is assumed that user has some badges"""
-        print self.gold, self.silver, self.bronze
         badge_bits = list()
         if self.gold:
             bit = ungettext(
