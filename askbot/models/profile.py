@@ -62,7 +62,7 @@ def info(msg):
         mod = inspect.getmodule(frm[0]).__name__
         info = "%s.%s@%s" % (mod, caller, line)
         if mod.startswith('askbot'):
-            logger.debug("[%s] %s" % (info, msg))
+            logger.info("[%s] %s" % (info, msg))
     except:
         pass
 
