@@ -827,17 +827,17 @@ def user_custom_tab(request, user, context):
         'page_title': page_title
     }
 
-#USER_VIEW_CALL_TABLE = {
-#    'stats': user_stats,
-#    'recent': user_recent,
-#    'inbox': user_responses,
-#    'network': user_network,
-#    'reputation': user_reputation,
-#    'favorites': user_favorites,
-#    'votes': user_votes,
-#    'email_subscriptions': user_email_subscriptions,
-#    'moderation': user_moderate,
-#}
+USER_VIEW_CALL_TABLE = {
+    'stats': user_stats,
+    'recent': user_recent,
+    'inbox': user_responses,
+    'network': user_network,
+    'reputation': user_reputation,
+    'favorites': user_favorites,
+    'votes': user_votes,
+    'email_subscriptions': user_email_subscriptions,
+    'moderation': user_moderate,
+}
 
 #CUSTOM_TAB = getattr(django_settings, 'ASKBOT_CUSTOM_USER_PROFILE_TAB', None)
 #if CUSTOM_TAB:
@@ -892,15 +892,10 @@ def user_profile(request, id, slug=None, tab_name=None, content_only=False):
 #        context['custom_tab_name'] = CUSTOM_TAB['NAME']
 #        context['custom_tab_slug'] = CUSTOM_TAB['SLUG']
     
-    context.update(user_stats(request, profile_owner, context))
-    context.update(user_recent(request, profile_owner, context))
-    context.update(user_responses(request, profile_owner, context))
-    context.update(user_network(request, profile_owner, context))
-    context.update(user_reputation(request, profile_owner, context))
-    context.update(user_favorites(request, profile_owner, context))
-    context.update(user_votes(request, profile_owner, context))
-    context.update(user_email_subscriptions(request, profile_owner, context))
-    context.update(user_moderate(request, profile_owner, context))
+    for x, callback in USER_VIEW_CALL_TABLE.iteritems():
+        data = callback(request, profile_owner, context)
+        if isinstance(data, dict):
+            context.update(data)
     
     if content_only:
         return render_into_skin('user_profile/user_profile_content.html', context, request, to_string=True)
