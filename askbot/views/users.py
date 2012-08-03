@@ -175,7 +175,7 @@ def user_moderate(request, subject, context):
     moderator = request.user
 
     if moderator.is_anonymous() or (moderator.is_authenticated() and not moderator.can_moderate_user(subject)):
-        return HttpResponseRedirect(subject.get_profile_url())
+        return HttpResponseRedirect(subject.get_profile().get_absolute_url())
 
     user_rep_changed = False
     user_status_changed = False
@@ -379,9 +379,9 @@ def user_stats(request, user, context):
     if when == 'always' or \
         (when == 'when-user-wants' and user.show_marked_tags == True):
         #refactor into: user.get_marked_tag_names('good'/'bad'/'subscribed')
-        interesting_tag_names = user.get_marked_tag_names('good')
-        ignored_tag_names = user.get_marked_tag_names('bad')
-        subscribed_tag_names = user.get_marked_tag_names('subscribed')
+        interesting_tag_names = user.get_profile().get_marked_tag_names('good')
+        ignored_tag_names = user.get_profile().get_marked_tag_names('bad')
+        subscribed_tag_names = user.get_profile().get_marked_tag_names('subscribed')
     else:
         interesting_tag_names = None
         ignored_tag_names = None
@@ -450,7 +450,7 @@ def user_stats(request, user, context):
         groups_membership_info = collections.defaultdict()
 
     data = {
-        'user_status_for_display': user.get_status_display(),
+        'user_status_for_display': user.get_profile().get_status_display(),
         'user_questions' : questions,
         'question_count': question_count,
 
@@ -746,9 +746,9 @@ def user_reputation(request, user, context):
     reputes = models.Repute.objects.filter(user=user).select_related('question', 'question__thread', 'user').order_by('-reputed_at')
 
     # prepare data for the graph - last values go in first
-    rep_list = ['[%s,%s]' % (calendar.timegm(datetime.datetime.now().timetuple()) * 1000, user.reputation)]
+    rep_list = ['[%s,%s]' % (calendar.timegm(datetime.datetime.now().timetuple()) * 1000, user.get_profile().reputation)]
     for rep in reputes:
-        rep_list.append('[%s,%s]' % (calendar.timegm(rep.reputed_at.timetuple()) * 1000, rep.reputation))
+        rep_list.append('[%s,%s]' % (calendar.timegm(rep.reputed_at.timetuple()) * 1000, rep.get_profile().reputation))
     reps = ','.join(rep_list)
     reps = '[%s]' % reps
 
@@ -800,7 +800,7 @@ def user_email_subscriptions(request, user, context):
         #about the email subscriptions, in that case the call below
         #will add any subscription settings that are missing
         #using the default frequencies
-        user.add_missing_askbot_subscriptions()
+        user.get_profile().add_missing_askbot_subscriptions()
 
         #initialize the form
         email_feeds_form = forms.EditUserEmailFeedsForm()

@@ -595,7 +595,7 @@ class ChangeUserStatusForm(forms.Form):
 
         #remove current status of the "subject" user from choices
         user_status_choices = filter_choices(
-                                        remove_choices=[subject.status, ],
+                                        remove_choices=[subject.get_profile().status, ],
                                         from_choices=user_status_choices
                                     )
 
