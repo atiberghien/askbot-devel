@@ -571,8 +571,6 @@ def api_get_questions(request):
     if not query:
         return HttpResponseBadRequest('Invalid query')
     threads = models.Thread.objects.get_for_query(query)
-    if should_show_sort_by_relevance():
-        threads = threads.extra(order_by = ['-relevance'])
     #todo: filter out deleted threads, for now there is no way
     threads = threads.distinct()[:30]
     thread_list = [{
