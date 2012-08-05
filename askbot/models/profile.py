@@ -1215,7 +1215,7 @@ class AskbotBaseProfile(models.Model):
                     ):
         self.assert_can_retag_question(question)
         question.thread.retag(
-            retagged_by = self,
+            retagged_by = self.user,
             retagged_at = timestamp,
             tagnames = tags,
             silent = silent
@@ -1223,7 +1223,7 @@ class AskbotBaseProfile(models.Model):
         question.thread.invalidate_cached_data()
         award_badges_signal.send(None,
             event = 'retag_question',
-            actor = self,
+            actor = self.user,
             context_object = question,
             timestamp = timestamp
         )
@@ -1248,12 +1248,12 @@ class AskbotBaseProfile(models.Model):
     
         prev_accepted_answer = answer.thread.accepted_answer
         if prev_accepted_answer:
-            auth.onAnswerAcceptCanceled(prev_accepted_answer, self)
+            auth.onAnswerAcceptCanceled(prev_accepted_answer, self.user)
     
-        auth.onAnswerAccept(answer, self, timestamp = timestamp)
+        auth.onAnswerAccept(answer, self.user, timestamp = timestamp)
         award_badges_signal.send(None,
             event = 'accept_best_answer',
-            actor = self,
+            actor = self.user,
             context_object = answer,
             timestamp = timestamp
         )
@@ -1268,7 +1268,7 @@ class AskbotBaseProfile(models.Model):
             self.assert_can_unaccept_best_answer(answer)
         if not answer.accepted():
             return
-        auth.onAnswerAcceptCanceled(answer, self)
+        auth.onAnswerAcceptCanceled(answer, self.user)
     
     @auto_now_timestamp
     def delete_comment(
@@ -1293,7 +1293,7 @@ class AskbotBaseProfile(models.Model):
                     ):
         self.assert_can_delete_answer(answer = answer)
         answer.deleted = True
-        answer.deleted_by = self
+        answer.deleted_by = self.user
         answer.deleted_at = timestamp
         answer.save()
     
@@ -1304,11 +1304,11 @@ class AskbotBaseProfile(models.Model):
         signals.delete_question_or_answer.send(
             sender = answer.__class__,
             instance = answer,
-            delete_by = self
+            delete_by = self.user
         )
         award_badges_signal.send(None,
                     event = 'delete_post',
-                    actor = self,
+                    actor = self.user,
                     context_object = answer,
                     timestamp = timestamp
                 )
@@ -1323,14 +1323,14 @@ class AskbotBaseProfile(models.Model):
         self.assert_can_delete_question(question = question)
     
         question.deleted = True
-        question.deleted_by = self
+        question.deleted_by = self.user
         question.deleted_at = timestamp
         question.save()
     
         for tag in list(question.thread.tags.all()):
             if tag.used_count == 1:
                 tag.deleted = True
-                tag.deleted_by = self
+                tag.deleted_by = self.user
                 tag.deleted_at = timestamp
             else:
                 tag.used_count = tag.used_count - 1
@@ -1339,11 +1339,11 @@ class AskbotBaseProfile(models.Model):
         signals.delete_question_or_answer.send(
             sender = question.__class__,
             instance = question,
-            delete_by = self
+            delete_by = self.user
         )
         award_badges_signal.send(None,
                     event = 'delete_post',
-                    actor = self,
+                    actor = self.user,
                     context_object = question,
                     timestamp = timestamp
                 )
@@ -1357,7 +1357,10 @@ class AskbotBaseProfile(models.Model):
                         timestamp = None
                     ):
         self.assert_can_close_question(question)
-        question.thread.set_closed_status(closed=True, closed_by=self, closed_at=timestamp, close_reason=reason)
+        question.thread.set_closed_status(closed=True, 
+                                          closed_by=self.user, 
+                                          closed_at=timestamp, 
+                                          close_reason=reason)
     
     @auto_now_timestamp
     def reopen_question(
@@ -1366,7 +1369,10 @@ class AskbotBaseProfile(models.Model):
                         timestamp = None
                     ):
         self.assert_can_reopen_question(question)
-        question.thread.set_closed_status(closed=False, closed_by=self, closed_at=timestamp, close_reason=None)
+        question.thread.set_closed_status(closed=False, 
+                                          closed_by=self.user, 
+                                          closed_at=timestamp, 
+                                          close_reason=None)
     
     @auto_now_timestamp
     def delete_post(
