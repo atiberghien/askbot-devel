@@ -734,6 +734,7 @@ def edit_group_membership(request):
         user_id = form.cleaned_data['user_id']
         try:
             user = models.User.objects.get(id = user_id)
+            profile = user.get_profile()
         except models.User.DoesNotExist:
             raise exceptions.PermissionDenied(
                 'user with id %d not found' % user_id
@@ -744,7 +745,7 @@ def edit_group_membership(request):
         if action == 'add':
             group_params = {'group_name': group_name, 'user': user}
             group = models.Tag.group_tags.get_or_create(**group_params)
-            request.user.edit_group_membership(user, group, 'add')
+            profile.edit_group_membership(user, group, 'add')
             template = get_template('widgets/group_snippet.html')
             return {
                 'name': group.name,
@@ -754,7 +755,7 @@ def edit_group_membership(request):
         elif action == 'remove':
             try:
                 group = models.Tag.group_tags.get_by_name(group_name = group_name)
-                request.user.edit_group_membership(user, group, 'remove')
+                profile.edit_group_membership(user, group, 'remove')
             except models.Tag.DoesNotExist:
                 raise exceptions.PermissionDenied()
         else:

@@ -375,25 +375,25 @@ class GroupProfile(models.Model):
         #added to make account merges work properly
         app_label = 'askbot'
 
-    def can_accept_user(self, user):
-        """True if user is preapproved to join the group"""
-        if user.is_anonymous():
+    def can_accept_user(self, profile):
+        """True if user profile is preapproved to join the group"""
+        if profile.user.is_anonymous():
             return False
 
         if self.is_open:
             return True
 
-        if user.is_administrator_or_moderator():
+        if profile.is_administrator_or_moderator():
             return True
 
         #relying on a specific method of storage
         if self.preapproved_emails:
-            email_match_re = re.compile(r'\s%s\s' % user.email)
+            email_match_re = re.compile(r'\s%s\s' % profile.user.email)
             if email_match_re.search(self.preapproved_emails):
                 return True
 
         if self.preapproved_email_domains:
-            email_domain = user.email.split('@')[1]
+            email_domain = profile.user.email.split('@')[1]
             domain_match_re = re.compile(r'\s%s\s' % email_domain)
             return domain_match_re.search(self.preapproved_email_domains)
 

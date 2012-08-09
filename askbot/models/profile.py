@@ -2102,10 +2102,8 @@ class AskbotBaseProfile(models.Model):
         groups = groups.select_related('group_profile')
     
         group_ids = groups.values_list('id', flat = True)
-        memberships = GroupMembership.objects.filter(
-                                    user__id = self.id,
-                                    group__id__in = group_ids
-                                )
+        memberships = GroupMembership.objects.filter(user__id=self.user.id,
+                                                     group__id__in=group_ids)
     
         info = collections.defaultdict(
             lambda: {'can_join': False, 'is_member': False}
@@ -2114,7 +2112,7 @@ class AskbotBaseProfile(models.Model):
             info[membership.group_id]['is_member'] = True
     
         for group in groups:
-            info[group.id]['can_join'] = group.group_profile.can_accept_user(self)
+            info[group.id]['can_join'] = group.group_profile.can_accept_user(self.user)
     
         return info
             
@@ -2412,7 +2410,7 @@ class AskbotBaseProfile(models.Model):
             raise ValueError('invalid action')
     
     def is_group_member(self, group = None):
-        return self.group_memberships.filter(group = group).count() == 1
+        return self.user.group_memberships.filter(group = group).count() == 1
 
     class Meta:
         abstract = True

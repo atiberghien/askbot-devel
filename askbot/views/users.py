@@ -13,7 +13,7 @@ import datetime
 import logging
 import operator
 
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.conf import settings as django_settings
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
@@ -62,6 +62,7 @@ def show_users(request, by_group = False, group_id = None, group_slug = None):
     group_email_moderation_enabled = False
     user_can_join_group = False
     user_is_group_member = False
+    user_profiles = None
     if by_group == True:
         if askbot_settings.GROUPS_ENABLED == False:
             raise Http404
@@ -80,15 +81,9 @@ def show_users(request, by_group = False, group_id = None, group_slug = None):
                 except models.Tag.DoesNotExist:
                     raise Http404
                 if group_slug == slugify(group.name):
-                    group_users = models.User.objects.filter(
-                        group_memberships__group__id = group_id
-                    )
+                    user_profiles = get_profile_model().objects.filter(user__group_memberships__group__id = group_id)
                     if request.user.is_authenticated():
-                        user_is_group_member = bool(
-                                                    group_users.filter(
-                                                        id = request.user.id
-                                                    ).count()
-                                                )
+                        user_is_group_member = bool(user_profiles.filter(user__id=request.user.id).count())
                 else:
                     group_page_url = reverse(
                                         'users_by_group',
@@ -122,20 +117,20 @@ def show_users(request, by_group = False, group_id = None, group_slug = None):
         else:
             # default
             order_by_parameter = '-reputation'
-
-        objects_list = Paginator(
-                            get_profile_model().objects.order_by(order_by_parameter),
-                            const.USERS_PAGE_SIZE
-                        )
+        
+        if not user_profiles:
+            user_profiles = get_profile_model().objects.order_by(order_by_parameter)
+            
         base_url = request.path + '?sort=%s&amp;' % sortby
     else:
         sortby = "reputation"
-        matching_profile = get_profile_model().objects.filter(models.Q(user__username__icontains=search_query) | models.Q(about__icontains=search_query))
-        objects_list = Paginator(
-                            matching_profile.order_by('-reputation'),
-                            const.USERS_PAGE_SIZE
-                        )
+        
+        if not user_profiles:
+            user_profiles = get_profile_model().objects.filter(Q(user__username__icontains=search_query) | Q(about__icontains=search_query)).order_by('-reputation')
+        
         base_url = request.path + '?name=%s&amp;sort=%s&amp;' % (search_query, sortby)
+    
+    objects_list = Paginator(user_profiles,const.USERS_PAGE_SIZE)
 
     try:
         profiles_page = objects_list.page(page)
@@ -882,7 +877,7 @@ def user_profile(request, id, slug=None, tab_name=None, content_only=False):
         data = callback(request, profile_owner, context)
         if isinstance(data, dict):
             context.update(data)
-    
+
     if content_only:
         return render_into_skin('user_profile/user_profile_content.html', context, request, to_string=True)
     
@@ -893,9 +888,12 @@ def groups(request, id = None, slug = None):
     """
     if askbot_settings.GROUPS_ENABLED == False:
         raise Http404
-
+    
+    user = request.user
+    profile = user.get_profile()
+    
     #6 lines of input cleaning code
-    if request.user.is_authenticated():
+    if user.is_authenticated():
         scope = request.GET.get('sort', 'all-groups')
         if scope not in ('all-groups', 'my-groups'):
             scope = 'all-groups'
@@ -905,19 +903,16 @@ def groups(request, id = None, slug = None):
     if scope == 'all-groups':
         groups = models.Tag.group_tags.get_all()
     else:
-        groups = models.Tag.group_tags.get_for_user(
-                                        user = request.user
-                                    )
+        groups = models.Tag.group_tags.get_for_user(user=user)
 
     groups = groups.select_related('group_profile')
 
-    user_can_add_groups = request.user.is_authenticated() and \
-            request.user.is_administrator_or_moderator()
+    user_can_add_groups = user.is_authenticated() and user.is_administrator_or_moderator()
 
     groups_membership_info = collections.defaultdict()
-    if request.user.is_authenticated():
+    if user.is_authenticated():
         #collect group memberhship information
-        groups_membership_info = request.user.get_groups_membership_info(groups)
+        groups_membership_info = profile.get_groups_membership_info(groups)
 
     data = {
         'groups': groups,
