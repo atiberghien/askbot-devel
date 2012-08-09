@@ -1,11 +1,11 @@
 {% extends "admin/base_site.html" %}
-{% load i18n admin_modify config_tags %}
+{% load i18n admin_modify config_tags adminmedia%}
 {% block extrastyle %}
 {{ block.super }}
-<link rel="stylesheet" type="text/css" href="{% load adminmedia %}{{ STATIC_URL }}admin/css/base.css" />
+<link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}admin/css/base.css" />
 {% endblock %}
 
-{% block stylesheet %}{% load adminmedia %}{% admin_media_prefix %}css/forms.css{% endblock %}
+{% block stylesheet %}{{ STATIC_URL }}admin/css/forms.css{% endblock %}
 {% block coltype %}colMS{% endblock %}
 {% block bodyclass %}dashboard{% endblock %}
 {% block userlinks %}<a href="/admin/doc/">{% trans 'Documentation' %}</a> / <a href="/admin/password_change/">{% trans 'Change password' %}</a> / <a href="/admin/logout/">{% trans 'Log out' %}</a>{% endblock %}
