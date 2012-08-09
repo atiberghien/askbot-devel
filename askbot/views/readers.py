@@ -379,7 +379,7 @@ def question(request, id):#refactor - long subroutine. display question body, an
 
     try:
         question_post.assert_is_visible_to(request.user)
-    except exceptions.QuestionHidden, error:
+    except exceptions.QuestionHidden, e:
         messages.info(request, unicode(e))
         return HttpResponseRedirect(reverse('forum-index'))
 
@@ -425,11 +425,11 @@ def question(request, id):#refactor - long subroutine. display question body, an
 
         try:
             show_comment.assert_is_visible_to(request.user)
-        except exceptions.AnswerHidden, error:
+        except exceptions.AnswerHidden, e:
             messages.error(request, unicode(e))
             #use reverse function here because question is not yet loaded
             return HttpResponseRedirect(reverse('question', kwargs = {'id': id}))
-        except exceptions.QuestionHidden, error:
+        except exceptions.QuestionHidden, e:
             messages.error(request, unicode(e))
             return HttpResponseRedirect(reverse('forum-index'))
 
@@ -444,7 +444,7 @@ def question(request, id):#refactor - long subroutine. display question body, an
 
         try:
             show_post.assert_is_visible_to(request.user)
-        except django_exceptions.PermissionDenied, error:
+        except django_exceptions.PermissionDenied, e:
             messages.error(request, unicode(e))
             return HttpResponseRedirect(reverse('question', kwargs = {'id': id}))
 
