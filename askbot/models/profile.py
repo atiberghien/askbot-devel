@@ -1487,7 +1487,7 @@ class AskbotBaseProfile(models.Model):
         comment_post.apply_edit(
                             text = body_text,
                             edited_at = timestamp,
-                            edited_by = self,
+                            edited_by = self.user,
                             by_email = by_email
                         )
         comment_post.thread.invalidate_cached_data()
@@ -1529,7 +1529,7 @@ class AskbotBaseProfile(models.Model):
         elif post.post_type == 'tag_wiki':
             post.apply_edit(
                 edited_at = timestamp,
-                edited_by = self,
+                edited_by = self.user,
                 text = body_text,
                 #todo: summary name clash in question and question revision
                 comment = revision_comment,
