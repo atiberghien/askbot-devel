@@ -890,7 +890,6 @@ def groups(request, id = None, slug = None):
         raise Http404
     
     user = request.user
-    profile = user.get_profile()
     
     #6 lines of input cleaning code
     if user.is_authenticated():
@@ -912,6 +911,7 @@ def groups(request, id = None, slug = None):
     groups_membership_info = collections.defaultdict()
     if user.is_authenticated():
         #collect group memberhship information
+        profile = user.get_profile()
         groups_membership_info = profile.get_groups_membership_info(groups)
 
     data = {
