@@ -1196,10 +1196,10 @@ class EditUserForm(forms.Form):
     def __init__(self, user, *args, **kwargs):
         super(EditUserForm, self).__init__(*args, **kwargs)
         logging.debug('initializing the form')
-        if askbot_settings.EDITABLE_SCREEN_NAME:
-            self.fields['username'] = UserNameField(label=_('Screen name'))
-            self.fields['username'].initial = user.username
-            self.fields['username'].user_instance = user
+#        if askbot_settings.EDITABLE_SCREEN_NAME:
+#            self.fields['username'] = UserNameField(label=_('Screen name'))
+#            self.fields['username'].initial = user.username
+#            self.fields['username'].user_instance = user
         self.fields['email'].initial = user.email
         self.fields['realname'].initial = user.real_name
         self.fields['website'].initial = user.website
@@ -1222,21 +1222,21 @@ class EditUserForm(forms.Form):
         """For security reason one unique email in database"""
         if self.user.email != self.cleaned_data['email']:
             #todo dry it, there is a similar thing in openidauth
-            if askbot_settings.EMAIL_UNIQUE is True:
-                if 'email' in self.cleaned_data:
-                    try:
-                        User.objects.get(email=self.cleaned_data['email'])
-                    except User.DoesNotExist:
-                        return self.cleaned_data['email']
-                    except User.MultipleObjectsReturned:
-                        raise forms.ValidationError(_(
-                            'this email has already been registered, '
-                            'please use another one')
-                        )
+#            if askbot_settings.EMAIL_UNIQUE is True:
+            if 'email' in self.cleaned_data:
+                try:
+                    User.objects.get(email=self.cleaned_data['email'])
+                except User.DoesNotExist:
+                    return self.cleaned_data['email']
+                except User.MultipleObjectsReturned:
                     raise forms.ValidationError(_(
                         'this email has already been registered, '
                         'please use another one')
                     )
+                raise forms.ValidationError(_(
+                    'this email has already been registered, '
+                    'please use another one')
+                )
         return self.cleaned_data['email']
 
 

@@ -491,12 +491,12 @@ class Post(models.Model):
             sender = self.__class__
         )
 
-        try:
-            from askbot.conf import settings as askbot_settings
-            if askbot_settings.GOOGLE_SITEMAP_CODE != '':
-                ping_google()
-        except Exception:
-            logging.debug('cannot ping google - did you register with them?')
+#        try:
+#            from askbot.conf import settings as askbot_settings
+#            if askbot_settings.GOOGLE_SITEMAP_CODE != '':
+#                ping_google()
+#        except Exception:
+#            logging.debug('cannot ping google - did you register with them?')
 
     def is_question(self):
         return self.post_type == 'question'

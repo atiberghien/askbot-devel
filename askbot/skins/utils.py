@@ -43,7 +43,7 @@ def get_available_skins(selected=None):
     stock_skins = get_skins_from_dir(stock_dir)
     default_dir = stock_skins.pop('default')
     common_dir = stock_skins.pop('common')
-
+    
     skins.update(stock_skins)
     if selected:
         if selected in skins:
@@ -57,6 +57,7 @@ def get_available_skins(selected=None):
     #re-insert default as a last item
     skins['default'] = default_dir
     skins['common'] = common_dir
+    
     return skins
 
 
@@ -135,16 +136,16 @@ def get_media_url(url, ignore_missing = False):
 
     #purpose of this try statement is to determine
     #which skin is currently used
-    try:
-        #this import statement must be hidden here
-        #because at startup time this branch will fail
-        #due to an import error
-        from askbot.conf import settings as askbot_settings
-        use_skin = askbot_settings.ASKBOT_DEFAULT_SKIN
-        resource_revision = askbot_settings.MEDIA_RESOURCE_REVISION
-    except ImportError:
-        use_skin = 'default'
-        resource_revision = None
+#    try:
+#        #this import statement must be hidden here
+#        #because at startup time this branch will fail
+#        #due to an import error
+#        from askbot.conf import settings as askbot_settings
+#        use_skin = askbot_settings.ASKBOT_DEFAULT_SKIN
+#        resource_revision = askbot_settings.MEDIA_RESOURCE_REVISION
+#    except ImportError:
+    use_skin = 'default'
+    resource_revision = None
 
     #determine from which skin take the media file
     try:
@@ -166,34 +167,34 @@ def get_media_url(url, ignore_missing = False):
     #print after - before
     return url
 
-def update_media_revision(skin = None):
-    """update skin media revision number based on the contents
-    of the skin media directory"""
-    from askbot.conf import settings as askbot_settings
-    resource_revision = askbot_settings.MEDIA_RESOURCE_REVISION
-
-    if skin:
-        if skin in get_skin_choices():
-            skin_path = get_path_to_skin(skin)
-        else:
-            raise MediaNotFound('Skin %s not found' % skin)
-    else:
-        skin = 'default'
-        skin_path = get_path_to_skin(askbot_settings.ASKBOT_DEFAULT_SKIN)
-
-    media_dirs = [
-        os.path.join(skin_path, 'media'),
-        os.path.join(get_path_to_skin('common'), 'media')#we always use common
-    ]
-
-    if skin != 'default':
-        #we have default skin as parent of the custom skin
-        default_skin_path = get_path_to_skin('default')
-        media_dirs.append(os.path.join(default_skin_path, 'media'))
-
-    current_hash = hasher.get_hash_of_dirs(media_dirs)
-
-    if current_hash != askbot_settings.MEDIA_RESOURCE_REVISION_HASH:
-        askbot_settings.update('MEDIA_RESOURCE_REVISION', resource_revision + 1)
-        askbot_settings.update('MEDIA_RESOURCE_REVISION_HASH', current_hash)
-        logging.debug('MEDIA_RESOURCE_REVISION changed')
+#def update_media_revision(skin = None):
+#    """update skin media revision number based on the contents
+#    of the skin media directory"""
+#    from askbot.conf import settings as askbot_settings
+#    resource_revision = askbot_settings.MEDIA_RESOURCE_REVISION
+#
+#    if skin:
+#        if skin in get_skin_choices():
+#            skin_path = get_path_to_skin(skin)
+#        else:
+#            raise MediaNotFound('Skin %s not found' % skin)
+#    else:
+#        skin = 'default'
+#        skin_path = get_path_to_skin(askbot_settings.ASKBOT_DEFAULT_SKIN)
+#
+#    media_dirs = [
+#        os.path.join(skin_path, 'media'),
+#        os.path.join(get_path_to_skin('common'), 'media')#we always use common
+#    ]
+#
+#    if skin != 'default':
+#        #we have default skin as parent of the custom skin
+#        default_skin_path = get_path_to_skin('default')
+#        media_dirs.append(os.path.join(default_skin_path, 'media'))
+#
+#    current_hash = hasher.get_hash_of_dirs(media_dirs)
+#
+#    if current_hash != askbot_settings.MEDIA_RESOURCE_REVISION_HASH:
+#        askbot_settings.update('MEDIA_RESOURCE_REVISION', resource_revision + 1)
+#        askbot_settings.update('MEDIA_RESOURCE_REVISION_HASH', current_hash)
+#        logging.debug('MEDIA_RESOURCE_REVISION changed')

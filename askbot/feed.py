@@ -32,11 +32,11 @@ class RssIndividualQuestionFeed(Feed):
         return askbot_settings.APP_TITLE + _(' - ') + \
                 _('Individual question feed')
 
-    def feed_copyright(self):
-        return askbot_settings.APP_COPYRIGHT
-
-    def description(self):
-        return askbot_settings.APP_DESCRIPTION
+#    def feed_copyright(self):
+#        return askbot_settings.APP_COPYRIGHT
+#
+#    def description(self):
+#        return askbot_settings.APP_DESCRIPTION
 
     def get_object(self, request, question_id):
         return Post.objects.get_questions().get(id=question_id)
@@ -101,11 +101,11 @@ class RssLastestQuestionsFeed(Feed):
         return askbot_settings.APP_TITLE + _(' - ') + \
                 _('Individual question feed')
 
-    def feed_copyright(self):
-        return askbot_settings.APP_COPYRIGHT
-
-    def description(self):
-        return askbot_settings.APP_DESCRIPTION
+#    def feed_copyright(self):
+#        return askbot_settings.APP_COPYRIGHT
+#
+#    def description(self):
+#        return askbot_settings.APP_DESCRIPTION
 
     def item_link(self, item):
         """get full url to the item

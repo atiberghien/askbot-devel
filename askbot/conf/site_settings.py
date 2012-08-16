@@ -34,30 +34,32 @@ settings.register(
 settings.register(
     livesettings.StringValue(
         QA_SITE_SETTINGS,
-        'APP_COPYRIGHT',
-        default='Copyright Askbot, 2010-2011.',
-        description=_('Copyright message to show in the footer')
-    )
-)
-
-settings.register(
-    livesettings.StringValue(
-        QA_SITE_SETTINGS,
-        'APP_DESCRIPTION',
-        default='Open source question and answer forum written in ' +\
-                'Python and Django',
-        description=_('Site description for the search engines')
-    )
-)
-
-settings.register(
-    livesettings.StringValue(
-        QA_SITE_SETTINGS,
         'APP_SHORT_NAME',
         default='Askbot',
         description=_('Short name for your Q&A forum')
     )
 )
+
+#settings.register(
+#    livesettings.StringValue(
+#        QA_SITE_SETTINGS,
+#        'APP_COPYRIGHT',
+#        default='Copyright Askbot, 2010-2011.',
+#        description=_('Copyright message to show in the footer')
+#    )
+#)
+
+#settings.register(
+#    livesettings.StringValue(
+#        QA_SITE_SETTINGS,
+#        'APP_DESCRIPTION',
+#        default='Open source question and answer forum written in ' +\
+#                'Python and Django',
+#        description=_('Site description for the search engines')
+#    )
+#)
+
+
 
 settings.register(
     livesettings.StringValue(

@@ -150,19 +150,19 @@ class UserEmailField(forms.EmailField):
         email = super(UserEmailField,self).clean(email.strip())
         if self.skip_clean:
             return email
-        if askbot_settings.EMAIL_UNIQUE == True:
-            try:
-                user = User.objects.get(email = email)
-                logging.debug('email taken')
-                raise forms.ValidationError(self.error_messages['taken'])
-            except User.DoesNotExist:
-                logging.debug('email valid')
-                return email
-            except User.MultipleObjectsReturned:
-                logging.debug('email taken many times over')
-                raise forms.ValidationError(self.error_messages['taken'])
-        else:
-            return email 
+#        if askbot_settings.EMAIL_UNIQUE == True:
+        try:
+            user = User.objects.get(email = email)
+            logging.debug('email taken')
+            raise forms.ValidationError(self.error_messages['taken'])
+        except User.DoesNotExist:
+            logging.debug('email valid')
+            return email
+        except User.MultipleObjectsReturned:
+            logging.debug('email taken many times over')
+            raise forms.ValidationError(self.error_messages['taken'])
+#        else:
+#            return email 
 
 class SetPasswordForm(forms.Form):
     password1 = forms.CharField(widget=forms.PasswordInput(attrs=login_form_widget_attrs),

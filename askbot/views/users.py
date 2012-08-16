@@ -286,8 +286,8 @@ def edit_user(request, id):
 
             set_new_email(user, new_email)
 
-            if askbot_settings.EDITABLE_SCREEN_NAME:
-                user.username = sanitize_html(form.cleaned_data['username'])
+#            if askbot_settings.EDITABLE_SCREEN_NAME:
+#                user.username = sanitize_html(form.cleaned_data['username'])
 
             user.real_name = sanitize_html(form.cleaned_data['realname'])
             user.website = sanitize_html(form.cleaned_data['website'])
