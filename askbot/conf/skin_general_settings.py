@@ -132,7 +132,7 @@ settings.register(
     values.StringValue(
         GENERAL_SKIN_SETTINGS,
         'ASKBOT_DEFAULT_SKIN',
-        default = 'default',
+        default = '',
         choices = skin_utils.get_skin_choices(),
         description = _('Select skin'),
     )

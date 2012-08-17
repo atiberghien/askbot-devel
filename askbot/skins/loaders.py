@@ -1,13 +1,8 @@
-import os.path
-from django.template.loaders import filesystem
 from django.template import RequestContext
 from django.http import HttpResponse
 from django.utils import translation
-from django.conf import settings as django_settings
 from coffin.common import CoffinEnvironment
 from jinja2 import loaders as jinja_loaders
-from jinja2.exceptions import TemplateNotFound
-from jinja2.utils import open_if_exists
 from askbot.conf import settings as askbot_settings
 from askbot.skins import utils
 
@@ -21,28 +16,28 @@ template.add_to_builtins('askbot.templatetags.extra_filters_jinja')
 #note - Django template loaders use method django.utils._os.safe_join
 #to work on unicode file paths
 #here it is ignored because it is assumed that we won't use unicode paths
-ASKBOT_SKIN_COLLECTION_DIR = os.path.dirname(__file__)
+#ASKBOT_SKIN_COLLECTION_DIR = os.path.dirname(__file__)
 
 #changed the name from load_template_source
-def filesystem_load_template_source(name, dirs=None):
-    """Django template loader
-    """
-
-    if dirs is None:
-        dirs = (ASKBOT_SKIN_COLLECTION_DIR, )
-    else:
-        dirs += (ASKBOT_SKIN_COLLECTION_DIR, )
-
-    try:
-        #todo: move this to top after splitting out get_skin_dirs()
-        tname = os.path.join(askbot_settings.ASKBOT_DEFAULT_SKIN,'templates',name)
-        return filesystem.load_template_source(tname,dirs)
-    except:
-        tname = os.path.join('default','templates',name)
-        return filesystem.load_template_source(tname,dirs)
-filesystem_load_template_source.is_usable = True
-#added this for backward compatbility
-load_template_source = filesystem_load_template_source
+#def filesystem_load_template_source(name, dirs=None):
+#    """Django template loader
+#    """
+#
+#    if dirs is None:
+#        dirs = (ASKBOT_SKIN_COLLECTION_DIR, )
+#    else:
+#        dirs += (ASKBOT_SKIN_COLLECTION_DIR, )
+#
+#    try:
+#        #todo: move this to top after splitting out get_skin_dirs()
+#        tname = os.path.join(askbot_settings.ASKBOT_DEFAULT_SKIN,'templates',name)
+#        return filesystem.load_template_source(tname,dirs)
+#    except:
+#        tname = os.path.join('default','templates',name)
+#        return filesystem.load_template_source(tname,dirs)
+#filesystem_load_template_source.is_usable = True
+##added this for backward compatbility
+#load_template_source = filesystem_load_template_source
 
 class SkinEnvironment(CoffinEnvironment):
     """Jinja template environment
@@ -63,8 +58,8 @@ class SkinEnvironment(CoffinEnvironment):
         """
         loaders = list()
         skin_dirs = utils.get_available_skins(selected = self.skin).values()
-        template_dirs = [os.path.join(skin_dir, 'templates') for skin_dir in skin_dirs]
-        loaders.append(jinja_loaders.FileSystemLoader(template_dirs))
+#        template_dirs = [os.path.join(skin_dir, 'templates') for skin_dir in skin_dirs]
+        loaders.append(jinja_loaders.FileSystemLoader(skin_dirs))
         return loaders
 
     def set_language(self, language_code):
@@ -86,16 +81,16 @@ class SkinEnvironment(CoffinEnvironment):
         return ''
 
 def include_django(template_name, request):
-    return render_to_string(template_name, {},context_instance=RequestContext(request))
+    return render_to_string(template_name, 
+                            {},
+                            context_instance=RequestContext(request))
 
 def load_skins():
     skins = dict()
     for skin_name in utils.get_available_skins():
-        skins[skin_name] = SkinEnvironment(
-                                skin = skin_name,
-                                extensions=['jinja2.ext.i18n',]
-                            )
-        skins[skin_name].set_language(django_settings.LANGUAGE_CODE)
+        skins[skin_name] = SkinEnvironment(skin = skin_name,
+                                           extensions=['jinja2.ext.i18n',])
+        skins[skin_name].set_language(translation.get_language())
         skins[skin_name].globals['include_django'] = include_django
         #from askbot.templatetags import extra_filters_jinja as filters
         #skins[skin_name].filters['media'] = filters.media
@@ -106,7 +101,8 @@ SKINS = load_skins()
 def get_skin(request = None):
     """retreives the skin environment
     for a given request (request var is not used at this time)"""
-    return SKINS[askbot_settings.ASKBOT_DEFAULT_SKIN]
+    skin = askbot_settings.ASKBOT_DEFAULT_SKIN or SKINS.keys()[0]
+    return SKINS[skin]
 
 def get_template(template, request = None):
     """retreives template for the skin
@@ -116,8 +112,7 @@ def get_template(template, request = None):
     request variable is used to localize the skin if possible
     """
     skin = get_skin(request)
-    if hasattr(request,'LANGUAGE_CODE'):
-        skin.set_language(request.LANGUAGE_CODE)
+    skin.set_language(translation.get_language())
     return skin.get_template(template)
 
 def render_into_skin(template, data, request, to_string=False, mimetype = 'text/html'):
@@ -132,9 +127,3 @@ def render_into_skin(template, data, request, to_string=False, mimetype = 'text/
         return content
     else:
         return HttpResponse(content, mimetype = mimetype)
-
-def render_text_into_skin(text, data, request):
-    context = RequestContext(request, data)
-    skin = get_skin(request)
-    template = skin.from_string(text)
-    return template.render(context)
