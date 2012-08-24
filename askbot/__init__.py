@@ -32,6 +32,7 @@ REQUIREMENTS = {
     'pystache': 'pystache',
     'lamson': 'Lamson',
     'pytz': 'pytz',
+    'longerusername': 'longerusername',
 }
 
 ##necessary for interoperability of django and coffin
