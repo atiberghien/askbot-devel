@@ -31,7 +31,6 @@ from askbot import exceptions
 from askbot.utils.diff import textDiff as htmldiff
 from askbot.forms import AnswerForm, ShowQuestionForm
 from askbot import models
-from askbot import schedules
 from askbot.models.tag import Tag
 from askbot import const
 from askbot.utils import functions
