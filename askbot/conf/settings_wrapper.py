@@ -20,10 +20,13 @@ at run time
 
 askbot.deps.livesettings is a module developed for satchmo project
 """
-from django.core.cache import cache
+from django.core.cache import get_cache
+
 from askbot.deps.livesettings import SortedDotDict, config_register
 from askbot.deps.livesettings.functions import config_get
 from askbot.deps.livesettings import signals
+
+cache = get_cache("askbot")
 
 class ConfigSettings(object):
     """A very simple Singleton wrapper for settings
@@ -104,7 +107,7 @@ class ConfigSettings(object):
         for key in cls.__instance.keys():
             #todo: this is odd that I could not use self.__instance.items() mapping here
             out[key] = cls.__instance[key].value
-        cache.add('askbot-livesettings', out)
+        cache.set('askbot-livesettings', out)
 
 
 signals.configuration_value_changed.connect(ConfigSettings.prime_cache)
