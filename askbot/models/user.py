@@ -13,8 +13,10 @@ from django.utils.html import strip_tags
 from askbot import const
 from askbot.utils import functions
 from askbot.models.tag import Tag
-from askbot.forms import DomainNameField
+#from askbot.forms import DomainNameField
 from askbot.utils.forms import email_is_allowed
+
+from django import forms
 
 class ResponseAndMentionActivityManager(models.Manager):
     def get_query_set(self):
@@ -410,7 +412,7 @@ class GroupProfile(models.Model):
         self.preapproved_emails = ' ' + '\n'.join(emails) + ' '
 
         domains = functions.split_list(self.preapproved_email_domains)
-        domain_field = DomainNameField()
+        domain_field = forms.CharField()
         try:
             map(lambda v: domain_field.clean(v), domains)
         except exceptions.ValidationError:
