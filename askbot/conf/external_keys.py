@@ -25,7 +25,8 @@ settings.register(
     livesettings.StringValue(
         EXTERNAL_KEYS,
         'RECAPTCHA_KEY',
-        description=_('Recaptcha public key')
+        description=_('Recaptcha public key'),
+        default=""
     )
 )
 
@@ -39,7 +40,8 @@ settings.register(
                         'real people from annoying spam robots. '
                         'Please get this and a public key at '
                         'the <a href="%(url)s">%(url)s</a>'
-                    ) % {'url': const.DEPENDENCY_URLS['recaptcha']}
+                    ) % {'url': const.DEPENDENCY_URLS['recaptcha']},
+        default=""
     )
 )
 
