@@ -428,15 +428,13 @@ def mark_tag(request, **kwargs):#tagging system
     post_data = simplejson.loads(request.raw_post_data)
     raw_tagnames = post_data['tagnames']
     reason = kwargs.get('reason', None)
-    #separate plain tag names and wildcard tags
+    profile = request.user.get_profile()
 
     tagnames, wildcards = forms.clean_marked_tagnames(raw_tagnames)
-    cleaned_tagnames, cleaned_wildcards = request.user.mark_tags(
-                                                            tagnames,
+    cleaned_tagnames, cleaned_wildcards = profile.mark_tags(tagnames,
                                                             wildcards,
-                                                            reason = reason,
-                                                            action = action
-                                                        )
+                                                            reason=reason,
+                                                            action=action)
 
     #lastly - calculate tag usage counts
     tag_usage_counts = dict()
@@ -448,9 +446,7 @@ def mark_tag(request, **kwargs):#tagging system
 
     for name in wildcards:
         if name in cleaned_wildcards:
-            tag_usage_counts[name] = models.Tag.objects.filter(
-                                        name__startswith = name[:-1]
-                                    ).count()
+            tag_usage_counts[name] = models.Tag.objects.filter(name__startswith = name[:-1]).count()
         else:
             tag_usage_counts[name] = 0
 
