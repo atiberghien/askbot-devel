@@ -41,6 +41,7 @@ from askbot.utils.diff import textDiff as htmldiff
 from askbot.utils.url_utils import strip_path
 from askbot import mail
 from django.contrib import messages
+from userena.utils import get_profile_model
 #
 #from askbot.models.profile import AskbotProfile
 
@@ -55,9 +56,8 @@ def get_model(model_name):
 def get_admins_and_moderators():
     """returns query set of users who are site administrators
     and moderators"""
-    return User.objects.filter(
-        models.Q(is_superuser=True) | models.Q(status='m')
-    )
+    user_ids = get_profile_model().objects.filter(models.Q(user__is_superuser=True) | models.Q(status='m')).values_list('user', flat=True)
+    return User.objects.filter(id__in=user_ids)
 
 def get_users_by_text_query(search_query):
     """Runs text search in user names and profile.
