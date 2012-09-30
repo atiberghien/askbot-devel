@@ -315,6 +315,7 @@ def vote(request, id):
 
             response_data['count'] = post.offensive_flag_count
             response_data['success'] = 1
+            response_data['post_type'] = post.post_type
 
         elif vote_type in ['7.5', '8.5']:
             #flag question or answer
