@@ -2,6 +2,8 @@ from django.core.management.base import NoArgsCommand
 from askbot.models import User
 from optparse import make_option
 from askbot.utils.console import choice_dialog
+from django.contrib.sites.models import Site
+from userena.utils import get_profile_model
 
 
 NUM_USERS = 40
@@ -14,7 +16,7 @@ NUM_COMMENTS = 20
 # karma. This can be calculated dynamically - max of MIN_REP_TO_... settings
 INITIAL_REPUTATION = 500
 
-BAD_STUFF = "<script>alert('hohoho')</script>"
+BAD_STUFF = ""
 
 # Defining template inputs.
 USERNAME_TEMPLATE = BAD_STUFF + "test_user_%s"
@@ -50,21 +52,24 @@ class Command(NoArgsCommand):
         users = []
 
         #add admin with the same password
-        admin = User.objects.create_user('admin', 'admin@example.com')
-        admin.set_password('admin')
+        admin = User.objects.get(username='admin')
         self.print_if_verbose("Created User 'admin'")
         users.append(admin)
 
         # Keeping the created users in array - we will iterate over them
         # several times, we don't want querying the model each and every time.
+        User.objects.exclude(username='admin').delete()
+        get_profile_model().objects.exclude(user=admin).delete()
         for i in range(NUM_USERS):
             s_idx = str(i)
             user = User.objects.create_user(USERNAME_TEMPLATE % s_idx,
                                             EMAIL_TEMPLATE % s_idx)
             user.set_password(PASSWORD_TEMPLATE % s_idx)
-            user.reputation = INITIAL_REPUTATION
             user.save()
-            self.print_if_verbose("Created User '%s'" % user.username)
+            
+            get_profile_model().objects.create(user=user, reputation=INITIAL_REPUTATION)
+            
+            self.print_if_verbose("Created Profile '%s'" % user.get_profile())
             users.append(user)
 
         return users
@@ -100,6 +105,8 @@ class Command(NoArgsCommand):
             if i < NUM_QUESTIONS/2:
                 tags += ' one-tag'
             active_question = user.post_question(
+                        language_code="en",
+                        site=Site.objects.get_current(),
                         title = TITLE_TEMPLATE % user.id,
                         body_text = CONTENT_TEMPLATE,
                         tags = tags,

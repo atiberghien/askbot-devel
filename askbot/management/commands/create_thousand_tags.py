@@ -1,18 +1,11 @@
 from django.core.management.base import NoArgsCommand
-from django.db import transaction
-from askbot import models
-import sys
+import random
+from django.contrib.auth.models import User
+from askbot.models.tag import Tag
 
 class Command(NoArgsCommand):
-    @transaction.commit_manually
     def handle_noargs(self, **options):
-        user = models.User.objects.get(id=2)
+        user = User.objects.all()[random.randint(0, User.objects.count())]
         for i in xrange(1000):
             name = 'tag' + str(i)
-            models.Tag.objects.create(
-                name = name,
-                created_by = user
-            )
-            if i % 1000 == 0:
-                transaction.commit()
-        transaction.commit()
+            Tag.objects.create(name = name,created_by = user)

@@ -72,7 +72,7 @@ def print_progress(elapsed, total, nowipe = False):
     operation, in percent, to the console and clear the output with
     a backspace character to have the number increment
     in-place"""
-    output = '%6.2f%%' % (100 * float(elapsed)/float(total))
+    output = '%f' % (100 * float(elapsed)/float(total))
     print_action(output, nowipe)
 
 class ProgressBar(object):

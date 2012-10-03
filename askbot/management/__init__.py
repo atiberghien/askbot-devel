@@ -4,7 +4,7 @@ from django.db import transaction
 from askbot.models import signals
 from askbot.utils import console
 
-FORMAT_STRING = '%6.2f%%'#to print progress in percent
+FORMAT_STRING = '%f'#to print progress in percent
 
 class NoArgsJob(NoArgsCommand):
     """Base class for a job command -
