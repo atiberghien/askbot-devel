@@ -34,6 +34,7 @@ from askbot.models.base import BaseQuerySetManager, DraftContent
 #todo: maybe merge askbot.utils.markup and forum.utils.html
 from askbot.utils.diff import textDiff as htmldiff
 from askbot.utils import mysql
+from userena.utils import get_profile_model
 
 class PostQuerySet(models.query.QuerySet):
     """
@@ -743,28 +744,20 @@ class Post(models.Model):
         """
         if tag_mark_reason == 'good':
             email_tag_filter_strategy = const.INCLUDE_INTERESTING
-            user_set_getter = User.objects.filter
+            user_set_getter = get_profile_model().objects.filter
         elif tag_mark_reason == 'bad':
             email_tag_filter_strategy = const.EXCLUDE_IGNORED
-            user_set_getter = User.objects.exclude
+            user_set_getter = get_profile_model().objects.exclude
         else:
             raise ValueError('Uknown value of tag mark reason %s' % tag_mark_reason)
 
         #part 1 - find users who follow or not ignore the set of tags
         tag_names = self.get_tag_names()
-        tag_selections = MarkedTag.objects.filter(
-            tag__name__in = tag_names,
-            reason = tag_mark_reason
-        )
-        subscribers = set(
-            user_set_getter(
-                tag_selections__in = tag_selections
-            ).filter(
-                notification_subscriptions__in = subscription_records
-            ).filter(
-                email_tag_filter_strategy = email_tag_filter_strategy
-            )
-        )
+        tag_selections = MarkedTag.objects.filter(tag__name__in=tag_names, reason=tag_mark_reason)
+        subscribers = user_set_getter(user__tag_selections__in=tag_selections)
+        subscribers = subscribers.filter(user__notification_subscriptions__in=subscription_records)
+        subscribers = subscribers.filter(email_tag_filter_strategy=email_tag_filter_strategy)
+        subscribers = User.objects.filter(id__in=subscribers.values_list('user_id', flat=True))
 
         #part 2 - find users who follow or not ignore tags via wildcard selections
         #inside there is a potentially time consuming loop
@@ -782,20 +775,16 @@ class Post(models.Model):
                 wildcard_tags_attribute = 'ignored_tags'
                 update_subscribers = lambda the_set, item: the_set.discard(item)
 
-            potential_wildcard_subscribers = User.objects.filter(
-                notification_subscriptions__in = subscription_records
-            ).filter(
-                email_tag_filter_strategy = email_tag_filter_strategy
-            ).exclude(
-                **empty_wildcard_filter #need this to limit size of the loop
-            )
+            potential_wildcard_subscribers = get_profile_model().filter(user__notification_subscriptions__in=subscription_records)\
+                                                         .filter(email_tag_filter_strategy=email_tag_filter_strategy)\
+                                                         .exclude(**empty_wildcard_filter) #need this to limit size of the loop
+            
+                                                         
             for potential_subscriber in potential_wildcard_subscribers:
-                wildcard_tags = getattr(
-                    potential_subscriber,
-                    wildcard_tags_attribute
-                ).split(' ')
-
+                wildcard_tags = getattr(potential_subscriber, wildcard_tags_attribute).split(' ')
+                
                 if tags_match_some_wildcard(tag_names, wildcard_tags):
+                    potential_wildcard_subscribers = User.objects.filter(id__in=potential_wildcard_subscribers.values_list('user_id', flat=True))
                     update_subscribers(subscribers, potential_subscriber)
 
         return subscribers
@@ -818,9 +807,9 @@ class Post(models.Model):
         )
 
         #segment of users who have tag filter turned off
-        global_subscribers = User.objects.filter(
-            email_tag_filter_strategy = const.INCLUDE_ALL
-        )
+        global_subscribers = get_profile_model().objects.filter(email_tag_filter_strategy=const.INCLUDE_ALL)
+        global_subscribers = User.objects.filter(id__in=global_subscribers.values_list('user_id', flat=True))
+        
         subscriber_set.update(global_subscribers)
 
         #segment of users who want emails on selected questions only
