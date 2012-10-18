@@ -397,7 +397,7 @@ def notify_award_message(instance, created, **kwargs):
                 u"Check out <a href=\"%(user_profile)s\">your profile</a>.") \
                 % {
                     'badge_name':badge.name,
-                    'user_profile':user.get_profile_url()
+                    'user_profile':user.get_profile().get_profile_url()
                 }
 
 #        user.message_set.create(message=msg)
@@ -431,9 +431,9 @@ def record_user_visit(user, timestamp, **kwargs):
     when user visits any pages, we update the last_seen and
     consecutive_days_visit_count
     """
-    prev_last_seen = user.last_seen or datetime.datetime.now()
-    user.last_seen = timestamp
-    if (user.last_seen - prev_last_seen).days == 1:
+    prev_last_seen = user.get_profile().last_seen or datetime.datetime.now()
+    user.get_profile().last_seen = timestamp
+    if (user.get_profile().last_seen - prev_last_seen).days == 1:
         user.consecutive_days_visit_count += 1
         award_badges_signal.send(None,
             event = 'site_visit',
@@ -443,7 +443,7 @@ def record_user_visit(user, timestamp, **kwargs):
         )
     #somehow it saves on the query as compared to user.save()
 #    User.objects.filter(id = user.id).update(last_seen = timestamp)
-    user.save()
+    user.get_profile().save()
 
 
 def record_vote(instance, created, **kwargs):
