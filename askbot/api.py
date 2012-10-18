@@ -15,7 +15,7 @@ def get_info_on_moderation_items(user):
     """
     if user.is_anonymous():
         return None
-    if not(user.is_moderator() or user.is_administrator()):
+    if not(user.get_profile().is_moderator() or user.get_profile().is_administrator()):
         return None
 
     content_types = (
