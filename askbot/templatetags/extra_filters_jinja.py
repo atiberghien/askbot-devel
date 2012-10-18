@@ -21,6 +21,7 @@ from askbot.shims.django_shims import ResolverMatch
 
 from django_countries import countries
 from django_countries import settings as countries_settings
+from django.template.defaultfilters import stringfilter
 
 register = coffin_template.Library()
 
@@ -142,7 +143,7 @@ diff_date = register.filter(functions.diff_date)
 
 setup_paginator = register.filter(functions.setup_paginator)
 
-slugify = register.filter(slugify)
+slugify = register.filter(stringfilter(slugify), jinja2_only = True)
 
 register.filter(
             name = 'intcomma',
