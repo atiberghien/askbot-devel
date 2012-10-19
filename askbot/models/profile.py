@@ -41,54 +41,6 @@ from django.core.urlresolvers import reverse
 from django.contrib import messages
 from userena.utils import get_profile_model
 
-############################################################
-####################### TEMP ###############################
-############################################################
-"""
-This monkey-patching avoid to modify to many piece of code due to the field migration.
-Call on user a automatically redirect to related profile if the field is not available in User.
-All redirection are logged in order to track call redirection.
-Step by step, it will be necessary to rewrite/adapt each piece of code that generation a redirection.
-"""
-debug_logger = logging.getLogger("debug")
-
-def user_setattr(self, name, value):
-    if '_profile_cache' in self.__dict__:
-        profile = self._profile_cache
-        if name not in self.__dict__ and \
-           name in profile.__dict__ and \
-           name != 'profile_must_be_saved':
-
-            object.__setattr__(profile, name, value)
-            self.profile_must_be_saved = True
-            return
-
-    object.__setattr__(self, name, value)
-
-def user_getattr(self, name):
-    if not name.startswith("_"):
-        logging.getLogger("debug").debug("Askbot refactoring needed : %s" % name)
-    profile = object.__getattribute__(self, 'get_profile')()
-    return object.__getattribute__(profile, name)
-
-def get_profile_url(func):
-    def wrapped(*args, **kwargs):
-        _self = args[0]
-        if hasattr(django_settings, 'AUTH_PROFILE_MODULE') and\
-            django_settings.AUTH_PROFILE_MODULE:
-            return _self.get_profile().get_absolute_url()
-        return func(*args, **kwargs)
-    return wrapped
-
-if django_settings.AUTH_PROFILE_MODULE != "auth.User":
-    setattr(User, 'get_absolute_url', get_profile_url(User.get_absolute_url))
-    setattr(User, '__setattr__', user_setattr)
-    setattr(User, '__getattr__', user_getattr)
-    
-
-############################################################
-##################### END TEMP #############################
-############################################################
 
 MARKED_TAG_PROPERTY_MAP = {
     'good': 'interesting_tags',
