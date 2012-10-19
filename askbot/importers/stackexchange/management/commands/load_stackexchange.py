@@ -143,7 +143,7 @@ class X(object):#
                 text = bits[0]
                 if se_m.user.id == -1:
                     return None
-                url = cls.get_user(se_m.user).get_profile_url()
+                url = cls.get_user(se_m.user).get_profile().get_absolute_url()
                 return '<a href="%s?sort=responses">%s</a>' % (url,text)
         return None
 

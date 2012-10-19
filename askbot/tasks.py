@@ -191,7 +191,7 @@ def record_post_update(
     assert(updated_by not in recipients)
 
     for user in (set(recipients) | set(newly_mentioned_users)):
-        user.update_response_counts()
+        user.get_profile().update_response_counts()
 
     #shortcircuit if the email alerts are disabled
     if askbot_settings.ENABLE_EMAIL_ALERTS == False:

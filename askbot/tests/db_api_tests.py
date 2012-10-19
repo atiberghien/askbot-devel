@@ -378,7 +378,7 @@ class CommentTests(AskbotTestCase):
         self.create_user(username = 'other_user')
         self.question = self.post_question()
         self.now = datetime.datetime.now()
-        self.comment = self.user.post_comment(
+        self.comment = self.user.get_profile().post_comment(
             parent_post = self.question,
             body_text = 'lalalalalalalalal hahahah'
         )

@@ -27,7 +27,7 @@ def onFlaggedItem(post, user, timestamp=None):
 
     flagged_user = post.author
 
-    flagged_user.receive_reputation(
+    flagged_user.get_profile().receive_reputation(
         askbot_settings.REP_LOSS_FOR_RECEIVING_FLAG
     )
     flagged_user.save()
@@ -40,7 +40,7 @@ def onFlaggedItem(post, user, timestamp=None):
                     question=question,
                     reputed_at=timestamp,
                     reputation_type=-4,#todo: clean up magic number
-                    reputation=flagged_user.reputation
+                    reputation=flagged_user.get_profile().reputation
                 )
     reputation.save()
 
@@ -59,7 +59,7 @@ def onFlaggedItem(post, user, timestamp=None):
     if post.offensive_flag_count ==  askbot_settings.MIN_FLAGS_TO_HIDE_POST:
         #todo: strange - are we supposed to hide the post here or the name of
         #setting is incorrect?
-        flagged_user.receive_reputation(
+        flagged_user.get_profile().receive_reputation(
             askbot_settings.REP_LOSS_FOR_RECEIVING_THREE_FLAGS_PER_REVISION
         )
 
@@ -72,12 +72,12 @@ def onFlaggedItem(post, user, timestamp=None):
             question=question,
             reputed_at=timestamp,
             reputation_type=-6,
-            reputation=flagged_user.reputation
+            reputation=flagged_user.get_profile().reputation
         )
         reputation.save()
 
     elif post.offensive_flag_count == askbot_settings.MIN_FLAGS_TO_DELETE_POST:
-        flagged_user.receive_reputation(
+        flagged_user.get_profile().receive_reputation(
             askbot_settings.REP_LOSS_FOR_RECEIVING_FIVE_FLAGS_PER_REVISION
         )
 
@@ -90,7 +90,7 @@ def onFlaggedItem(post, user, timestamp=None):
             question=question,
             reputed_at=timestamp,
             reputation_type=-7,
-            reputation=flagged_user.reputation
+            reputation=flagged_user.get_profile().reputation
         )
         reputation.save()
 
@@ -110,7 +110,7 @@ def onUnFlaggedItem(post, user, timestamp=None):
 
     flagged_user = post.author
 
-    flagged_user.receive_reputation(
+    flagged_user.get_profile().receive_reputation(
         - askbot_settings.REP_LOSS_FOR_RECEIVING_FLAG
     )
     flagged_user.save()
@@ -123,7 +123,7 @@ def onUnFlaggedItem(post, user, timestamp=None):
                     question=question,
                     reputed_at=timestamp,
                     reputation_type=-4,#todo: clean up magic number
-                    reputation=flagged_user.reputation
+                    reputation=flagged_user.get_profile().reputation
                 )
     reputation.save()
 
@@ -143,7 +143,7 @@ def onUnFlaggedItem(post, user, timestamp=None):
     if post.offensive_flag_count ==  askbot_settings.MIN_FLAGS_TO_HIDE_POST - 1:
         #todo: strange - are we supposed to hide the post here or the name of
         #setting is incorrect?
-        flagged_user.receive_reputation(
+        flagged_user.get_profile().receive_reputation(
             - askbot_settings.REP_LOSS_FOR_RECEIVING_THREE_FLAGS_PER_REVISION
         )
 
@@ -156,12 +156,12 @@ def onUnFlaggedItem(post, user, timestamp=None):
             question=question,
             reputed_at=timestamp,
             reputation_type=-6,
-            reputation=flagged_user.reputation
+            reputation=flagged_user.get_profile().reputation
         )
         reputation.save()
     # The post fell below DELETE treshold, undelete it
     elif post.offensive_flag_count == askbot_settings.MIN_FLAGS_TO_DELETE_POST-1 :
-        flagged_user.receive_reputation(
+        flagged_user.get_profile().receive_reputation(
             - askbot_settings.REP_LOSS_FOR_RECEIVING_FIVE_FLAGS_PER_REVISION
         )
 
@@ -174,7 +174,7 @@ def onUnFlaggedItem(post, user, timestamp=None):
             question=question,
             reputed_at=timestamp,
             reputation_type=-7,
-            reputation=flagged_user.reputation
+            reputation=flagged_user.get_profile().reputation
         )
         reputation.save()
 
@@ -187,16 +187,16 @@ def onAnswerAccept(answer, user, timestamp=None):
     question = answer.thread._question_post()
 
     if answer.author != user:
-        answer.author.receive_reputation(
+        answer.author.get_profile().receive_reputation(
             askbot_settings.REP_GAIN_FOR_RECEIVING_ANSWER_ACCEPTANCE
         )
-        answer.author.save()
+        answer.author.get_profile().save()
         reputation = Repute(user=answer.author,
                    positive=askbot_settings.REP_GAIN_FOR_RECEIVING_ANSWER_ACCEPTANCE,
                    question=question,
                    reputed_at=timestamp,
                    reputation_type=2,
-                   reputation=answer.author.reputation)
+                   reputation=answer.author.get_profile().reputation)
         reputation.save()
 
     if answer.author == question.author and user == question.author:
@@ -204,14 +204,14 @@ def onAnswerAccept(answer, user, timestamp=None):
         #then answering and accepting as best all by the same person
         return
 
-    user.receive_reputation(askbot_settings.REP_GAIN_FOR_ACCEPTING_ANSWER)
-    user.save()
+    user.get_profile().receive_reputation(askbot_settings.REP_GAIN_FOR_ACCEPTING_ANSWER)
+    user.get_profile().save()
     reputation = Repute(user=user,
                positive=askbot_settings.REP_GAIN_FOR_ACCEPTING_ANSWER,
                question=question,
                reputed_at=timestamp,
                reputation_type=3,
-               reputation=user.reputation)
+               reputation=user.get_profile().reputation)
     reputation.save()
 
 @transaction.commit_on_success
@@ -222,18 +222,17 @@ def onAnswerAcceptCanceled(answer, user, timestamp=None):
     question = answer.thread._question_post()
 
     if user != answer.author:
-        answer.author.receive_reputation(
+        answer.author.get_profile().receive_reputation(
             askbot_settings.REP_LOSS_FOR_RECEIVING_CANCELATION_OF_ANSWER_ACCEPTANCE
         )
-        answer.author.save()
+        answer.author.get_profile().save()
         reputation = Repute(
             user=answer.author,
-            negative=\
-             askbot_settings.REP_LOSS_FOR_RECEIVING_CANCELATION_OF_ANSWER_ACCEPTANCE,
+            negative=askbot_settings.REP_LOSS_FOR_RECEIVING_CANCELATION_OF_ANSWER_ACCEPTANCE,
             question=question,
             reputed_at=timestamp,
             reputation_type=-2,
-            reputation=answer.author.reputation
+            reputation=answer.author.get_profile().reputation
         )
         reputation.save()
 
@@ -243,16 +242,16 @@ def onAnswerAcceptCanceled(answer, user, timestamp=None):
         #here it protects the user from uwanted reputation loss
         return
 
-    user.receive_reputation(
+    user.get_profile().receive_reputation(
         askbot_settings.REP_LOSS_FOR_CANCELING_ANSWER_ACCEPTANCE
     )
-    user.save()
+    user.get_profile().save()
     reputation = Repute(user=user,
                negative=askbot_settings.REP_LOSS_FOR_CANCELING_ANSWER_ACCEPTANCE,
                question=question,
                reputed_at=timestamp,
                reputation_type=-1,
-               reputation=user.reputation)
+               reputation=user.get_profile().reputation)
     reputation.save()
 
 @transaction.commit_on_success
@@ -274,10 +273,10 @@ def onUpVoted(vote, post, user, timestamp=None):
         author = post.author
         todays_rep_gain = Repute.objects.get_reputation_by_upvoted_today(author)
         if todays_rep_gain <  askbot_settings.MAX_REP_GAIN_PER_USER_PER_DAY:
-            author.receive_reputation(
+            author.get_profile().receive_reputation(
                 askbot_settings.REP_GAIN_FOR_RECEIVING_UPVOTE
             )
-            author.save()
+            author.get_profile().save()
 
             question = post.thread._question_post() # TODO: this is suboptimal if post is already a question
 
@@ -286,7 +285,7 @@ def onUpVoted(vote, post, user, timestamp=None):
                        question=question,
                        reputed_at=timestamp,
                        reputation_type=1,
-                       reputation=author.reputation)
+                       reputation=author.get_profile().reputation)
             reputation.save()
 
 @transaction.commit_on_success
@@ -309,10 +308,10 @@ def onUpVotedCanceled(vote, post, user, timestamp=None):
 
     if not (post.wiki or post.is_anonymous):
         author = post.author
-        author.receive_reputation(
+        author.get_profile().receive_reputation(
             askbot_settings.REP_LOSS_FOR_RECEIVING_UPVOTE_CANCELATION
         )
-        author.save()
+        author.get_profile().save()
 
         question = post.thread._question_post() # TODO: this is suboptimal if post is already a question
 
@@ -322,7 +321,7 @@ def onUpVotedCanceled(vote, post, user, timestamp=None):
             question=question,
             reputed_at=timestamp,
             reputation_type=-8,
-            reputation=author.reputation
+            reputation=author.get_profile().reputation
         )
         reputation.save()
 
@@ -338,10 +337,10 @@ def onDownVoted(vote, post, user, timestamp=None):
 
     if not (post.wiki or post.is_anonymous):
         author = post.author
-        author.receive_reputation(
+        author.get_profile().receive_reputation(
             askbot_settings.REP_LOSS_FOR_RECEIVING_DOWNVOTE
         )
-        author.save()
+        author.get_profile().save()
 
         question = post.thread._question_post() # TODO: this is suboptimal if post is already a question
 
@@ -350,20 +349,20 @@ def onDownVoted(vote, post, user, timestamp=None):
                    question=question,
                    reputed_at=timestamp,
                    reputation_type=-3,
-                   reputation=author.reputation)
+                   reputation=author.get_profile().reputation)
         reputation.save()
 
-        user.receive_reputation(
+        user.get_profile().receive_reputation(
             askbot_settings.REP_LOSS_FOR_DOWNVOTING,
         )
-        user.save()
+        user.get_profile().save()
 
         reputation = Repute(user=user,
                    negative=askbot_settings.REP_LOSS_FOR_DOWNVOTING,
                    question=question,
                    reputed_at=timestamp,
                    reputation_type=-5,
-                   reputation=user.reputation)
+                   reputation=user.get_profile().reputation)
         reputation.save()
 
 @transaction.commit_on_success
@@ -380,10 +379,10 @@ def onDownVotedCanceled(vote, post, user, timestamp=None):
 
     if not (post.wiki or post.is_anonymous):
         author = post.author
-        author.receive_reputation(
+        author.get_profile().receive_reputation(
             askbot_settings.REP_GAIN_FOR_RECEIVING_DOWNVOTE_CANCELATION
         )
-        author.save()
+        author.get_profile().save()
 
         question = post.thread._question_post() # TODO: this is suboptimal if post is already a question
 
@@ -393,17 +392,17 @@ def onDownVotedCanceled(vote, post, user, timestamp=None):
                 question=question,
                 reputed_at=timestamp,
                 reputation_type=4,
-                reputation=author.reputation
+                reputation=author.get_profile().reputation
             )
         reputation.save()
 
-        user.receive_reputation(askbot_settings.REP_GAIN_FOR_CANCELING_DOWNVOTE)
-        user.save()
+        user.get_profile().receive_reputation(askbot_settings.REP_GAIN_FOR_CANCELING_DOWNVOTE)
+        user.get_profile().save()
 
         reputation = Repute(user=user,
                    positive=askbot_settings.REP_GAIN_FOR_CANCELING_DOWNVOTE,
                    question=question,
                    reputed_at=timestamp,
                    reputation_type=5,
-                   reputation=user.reputation)
+                   reputation=user.get_profile().reputation)
         reputation.save()

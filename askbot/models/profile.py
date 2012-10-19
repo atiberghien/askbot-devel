@@ -8,7 +8,6 @@ from django.conf import settings as django_settings
 from django.core import exceptions as django_exceptions
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
-from django.utils.html import escape
 from django.utils.translation import ugettext as _
 from django.utils.translation import ungettext
 
@@ -34,61 +33,9 @@ from askbot.models.repute import Repute, Vote
 from askbot.utils.decorators import auto_now_timestamp
 from askbot.utils.slug import slugify
 
-from django.utils.safestring import mark_safe
-
 from userena.models import UserenaLanguageBaseProfile
 from django.core.urlresolvers import reverse
 from django.contrib import messages
-from userena.utils import get_profile_model
-
-############################################################
-####################### TEMP ###############################
-############################################################
-"""
-This monkey-patching avoid to modify to many piece of code due to the field migration.
-Call on user a automatically redirect to related profile if the field is not available in User.
-All redirection are logged in order to track call redirection.
-Step by step, it will be necessary to rewrite/adapt each piece of code that generation a redirection.
-"""
-debug_logger = logging.getLogger("debug")
-
-def user_setattr(self, name, value):
-    if '_profile_cache' in self.__dict__:
-        profile = self._profile_cache
-        if name not in self.__dict__ and \
-           name in profile.__dict__ and \
-           name != 'profile_must_be_saved':
-
-            object.__setattr__(profile, name, value)
-            self.profile_must_be_saved = True
-            return
-
-    object.__setattr__(self, name, value)
-
-def user_getattr(self, name):
-    if not name.startswith("_"):
-        logging.getLogger("debug").debug("Askbot refactoring needed : %s" % name)
-    profile = object.__getattribute__(self, 'get_profile')()
-    return object.__getattribute__(profile, name)
-
-def get_profile_url(func):
-    def wrapped(*args, **kwargs):
-        _self = args[0]
-        if hasattr(django_settings, 'AUTH_PROFILE_MODULE') and\
-            django_settings.AUTH_PROFILE_MODULE:
-            return _self.get_profile().get_absolute_url()
-        return func(*args, **kwargs)
-    return wrapped
-
-if django_settings.AUTH_PROFILE_MODULE != "auth.User":
-    setattr(User, 'get_absolute_url', get_profile_url(User.get_absolute_url))
-    setattr(User, '__setattr__', user_setattr)
-    setattr(User, '__getattr__', user_getattr)
-    
-
-############################################################
-##################### END TEMP #############################
-############################################################
 
 MARKED_TAG_PROPERTY_MAP = {
     'good': 'interesting_tags',
@@ -835,7 +782,7 @@ class AskbotBaseProfile(models.Model):
             )
     
         _assert_user_can(
-            user = self.user,
+            profile = self,
             post = question,
             owner_can = True,
             suspended_owner_cannot = True,
@@ -987,7 +934,7 @@ class AskbotBaseProfile(models.Model):
         min_rep_setting = askbot_settings.MIN_REP_TO_RETAG_OTHERS_QUESTIONS
     
         _assert_user_can(
-            profile = self.user,
+            profile = self,
             post = question,
             owner_can = True,
             blocked_error_message = blocked_error_message,
@@ -1014,7 +961,7 @@ class AskbotBaseProfile(models.Model):
         min_rep_setting = askbot_settings.MIN_REP_TO_DELETE_OTHERS_COMMENTS
     
         _assert_user_can(
-            profile = self.user,
+            profile = self,
             post = comment,
             owner_can = True,
             blocked_error_message = blocked_error_message,
@@ -1119,10 +1066,10 @@ class AskbotBaseProfile(models.Model):
                 aa.save()
             #maybe add pending posts message?
         else:
-            if self.user.is_blocked():
+            if self.user.get_profile().is_blocked():
                 msg = get_i18n_message('BLOCKED_USERS_CANNOT_POST')
                 messages.error(request, msg)
-            elif self.user.is_suspended():
+            elif self.user.get_profile().is_suspended():
                 msg = get_i18n_message('SUSPENDED_USERS_CANNOT_POST')
                 messages.error(request, msg)
             else:
@@ -2084,10 +2031,6 @@ class AskbotBaseProfile(models.Model):
         else:
             return questions
     
-    #todo: find where this is used and replace with get_absolute_url
-    def get_profile_url(self):
-        return self.get_absolute_url()
-    
     def get_absolute_url(self):
         raise "Must be implemented by concrete profile"
     
@@ -2459,7 +2402,6 @@ class AskbotProfile(AskbotBaseProfile, UserenaLanguageBaseProfile):
         app_label = 'askbot'
         
     def __getattr__(self, name):
-        info("getattr %s" % name)
         if name in [f.name for f in User._meta.fields if f.name != 'id']:
             return object.__getattribute__(self.user, name)
         
@@ -2467,7 +2409,6 @@ class AskbotProfile(AskbotBaseProfile, UserenaLanguageBaseProfile):
     
     def __setattr__(self, name, value):
         if name in [f.name for f in User._meta.fields if f.name != 'id']:
-            info("setattr %s" % name)
             object.__setattr__(self.user, name, value)
         else:
             object.__setattr__(self, name, value)
@@ -2488,8 +2429,8 @@ def propragate_user_save(sender, instance, created, **kwargs):
     """
     if not created:
         if hasattr(instance, 'profile_must_be_saved') and instance.profile_must_be_saved:
-            instance.get_profile().save()
             instance.profile_must_be_save = False
+            instance.get_profile().save()
 
 if django_settings.AUTH_PROFILE_MODULE == "askbot.AskbotProfile":
     django_signals.post_save.connect(create_user_profile, sender=User)

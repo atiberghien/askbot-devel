@@ -585,7 +585,7 @@ class Post(models.Model):
             activities.delete()
 
             for user in recipients:
-                user.update_response_counts()
+                user.get_profile().update_response_counts()
 
         super(Post, self).delete(**kwargs)
 
@@ -1120,7 +1120,7 @@ class Post(models.Model):
             raise NotImplementedError
         revisions = self.revisions.all().order_by('revised_at')
         rev0 = revisions[0]
-        new_question = rev0.author.post_question(
+        new_question = rev0.author.get_profile().post_question(
             title = new_title,
             body_text = rev0.text,
             tags = self.question.thread.tagnames,
@@ -1130,7 +1130,7 @@ class Post(models.Model):
         )
         if len(revisions) > 1:
             for rev in revisions[1:]:
-                rev.author.edit_question(
+                rev.author.get_profile().edit_question(
                     question = new_question,
                     body_text = rev.text,
                     revision_comment = rev.summary,
@@ -1149,7 +1149,7 @@ class Post(models.Model):
             raise NotImplementedError
         revisions = self.revisions.all().order_by('revised_at')
         rev0 = revisions[0]
-        new_answer = rev0.author.post_answer(
+        new_answer = rev0.author.get_profile().post_answer(
             question = question,
             body_text = rev0.text,
             wiki = self.wiki,
@@ -1157,7 +1157,7 @@ class Post(models.Model):
         )
         if len(revisions) > 1:
             for rev in revisions:
-                rev.author.edit_answer(
+                rev.author.get_profile().edit_answer(
                     answer = new_answer,
                     body_text = rev.text,
                     revision_comment = rev.summary,

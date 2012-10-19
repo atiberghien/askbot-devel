@@ -901,7 +901,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
         self.user.set_status('b')
         self.assertRaises(
                     exceptions.PermissionDenied,
-                    self.user.post_comment,
+                    self.user.get_profile().post_comment,
                     parent_post = question,
                     body_text = 'test comment'
                 )
@@ -920,7 +920,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
 
         self.assertRaises(
                     exceptions.PermissionDenied,
-                    self.user.post_comment,
+                    self.user.get_profile().post_comment,
                     parent_post = answer,
                     body_text = 'test comment'
                 )
@@ -933,7 +933,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
 
     def test_blocked_user_cannot_delete_own_comment(self):
         question = self.post_question()
-        comment = self.user.post_comment(
+        comment = self.user.get_profile().post_comment(
                         parent_post = question,
                         body_text = 'test comment'
                     )
@@ -952,7 +952,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
 
     def test_low_rep_user_cannot_delete_others_comment(self):
         question = self.post_question()
-        comment = self.user.post_comment(
+        comment = self.user.get_profile().post_comment(
                         parent_post = question,
                         body_text = 'test comment'
                     )
@@ -974,7 +974,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
 
     def test_high_rep_user_can_delete_comment(self):
         question = self.post_question()
-        comment = self.user.post_comment(
+        comment = self.user.get_profile().post_comment(
                         parent_post = question,
                         body_text = 'test comment'
                     )
@@ -995,7 +995,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
                         question = question,
                         body_text = 'test answer'
                     )
-        comment = self.user.post_comment(
+        comment = self.user.get_profile().post_comment(
                         parent_post = answer,
                         body_text = 'test comment'
                     )
@@ -1013,7 +1013,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
 
     def test_moderator_can_delete_comment(self):
         question = self.post_question()
-        comment = self.user.post_comment(
+        comment = self.user.get_profile().post_comment(
                         parent_post = question,
                         body_text = 'test comment'
                     )
@@ -1028,7 +1028,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
 
     def test_admin_can_delete_comment(self):
         question = self.post_question()
-        comment = self.user.post_comment(
+        comment = self.user.get_profile().post_comment(
                         parent_post = question,
                         body_text = 'test comment'
                     )
@@ -1044,7 +1044,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
 
     def test_high_rep_suspended_user_cannot_delete_others_comment(self):
         question = self.post_question()
-        comment = self.user.post_comment(
+        comment = self.user.get_profile().post_comment(
                         parent_post = question,
                         body_text = 'test comment'
                     )
@@ -1065,7 +1065,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
 
     def test_suspended_user_can_delete_own_comment(self):
         question = self.post_question()
-        comment = self.user.post_comment(
+        comment = self.user.get_profile().post_comment(
                         parent_post = question,
                         body_text = 'test comment'
                     )
@@ -1085,7 +1085,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
         assert(self.user.reputation < self.min_rep)
         self.assertRaises(
                     exceptions.PermissionDenied,
-                    self.user.post_comment,
+                    self.user.get_profile().post_comment,
                     parent_post = question,
                     body_text = 'test comment'
                 )
@@ -1103,7 +1103,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
                         question = question,
                         body_text = 'test answer'
                     )
-        comment = self.user.post_comment(
+        comment = self.user.get_profile().post_comment(
                                     parent_post = answer,
                                     body_text = 'test comment'
                                 )
@@ -1120,7 +1120,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
                             author = self.other_user
                         )
         self.user.reputation = self.min_rep
-        comment = self.user.post_comment(
+        comment = self.user.get_profile().post_comment(
                             parent_post = question,
                             body_text = 'test comment'
                         )
@@ -1137,7 +1137,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
         self.user.set_status('s')
         self.assertRaises(
                 exceptions.PermissionDenied,
-                self.user.post_comment,
+                self.user.get_profile().post_comment,
                 parent_post = question,
                 body_text = 'test comment'
             )
@@ -1151,7 +1151,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
     def test_suspended_user_can_comment_own_question(self):
         question = self.post_question()
         self.user.set_status('s')
-        comment = self.user.post_comment(
+        comment = self.user.get_profile().post_comment(
                             parent_post = question,
                             body_text = 'test comment'
                         )
@@ -1169,7 +1169,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
         self.other_user.save()
         assert(self.other_user.is_administrator())
         assert(self.other_user.reputation < self.min_rep)
-        comment = self.other_user.post_comment(
+        comment = self.other_user.get_profile().post_comment(
                             parent_post = question,
                             body_text = 'test comment'
                         )
@@ -1186,7 +1186,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
         self.other_user.set_status('m')
         assert(self.other_user.is_moderator())
         assert(self.other_user.reputation < self.min_rep)
-        comment = self.other_user.post_comment(
+        comment = self.other_user.get_profile().post_comment(
                             parent_post = question,
                             body_text = 'test comment'
                         )
@@ -1222,7 +1222,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
                                     timestamp = old_timestamp,
                                     body_text = 'blah'
                                 )
-        comment2 = self.other_user.post_comment(#post this one with the current timestamp
+        comment2 = self.other_user.get_profile().post_comment(#post this one with the current timestamp
                                     parent_post = question,
                                     body_text = 'blah'
                                 )
@@ -1289,7 +1289,7 @@ class CommentPermissionAssertionTests(PermissionAssertionTestCase):
         askbot_settings.update('MINUTES_TO_EDIT_COMMENT', 10)
         old_timestamp = datetime.datetime.now() - datetime.timedelta(1)
         question = self.post_question(author = self.user, timestamp = old_timestamp)
-        comment = self.user.post_comment(
+        comment = self.user.get_profile().post_comment(
                                     parent_post = question,
                                     body_text = 'blah',
                                     timestamp = old_timestamp

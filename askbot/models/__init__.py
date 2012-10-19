@@ -164,7 +164,7 @@ def format_instant_notification_email(
         'post_link': '<a href="%s">%s</a>' % (post_url, _(post.post_type))
     }
 
-    can_reply = to_user.can_post_by_email()
+    can_reply = to_user.get_profile().can_post_by_email()
 
     if can_reply:
         reply_separator = const.SIMPLE_REPLY_SEPARATOR_TEMPLATE % \
@@ -185,7 +185,7 @@ def format_instant_notification_email(
     update_data = {
         'update_author_name': from_user.username,
         'receiving_user_name': to_user.username,
-        'receiving_user_karma': to_user.reputation,
+        'receiving_user_karma': to_user.get_profile().reputation,
         'reply_by_email_karma_threshold': askbot_settings.MIN_REP_TO_POST_BY_EMAIL,
         'can_reply': can_reply,
         'content_preview': content_preview,#post.get_snippet()
@@ -223,8 +223,8 @@ def get_reply_to_addresses(user, post):
     #these variables will contain return values
     primary_addr = django_settings.DEFAULT_FROM_EMAIL
     secondary_addr = None
-    if user.can_post_by_email():
-        if user.reputation >= askbot_settings.MIN_REP_TO_POST_BY_EMAIL:
+    if user.get_profile().can_post_by_email():
+        if user.get_profile().reputation >= askbot_settings.MIN_REP_TO_POST_BY_EMAIL:
 
             reply_args = {
                 'post': post,
@@ -375,12 +375,12 @@ def record_award_event(instance, created, **kwargs):
         badge = get_badge(instance.badge.slug)
 
         if badge.level == const.GOLD_BADGE:
-            instance.user.gold += 1
+            instance.user.get_profile().gold += 1
         if badge.level == const.SILVER_BADGE:
-            instance.user.silver += 1
+            instance.user.get_profile().silver += 1
         if badge.level == const.BRONZE_BADGE:
-            instance.user.bronze += 1
-        instance.user.save()
+            instance.user.get_profile().bronze += 1
+        instance.user.get_profile().save()
 
 def notify_award_message(instance, created, **kwargs):
     """
@@ -397,7 +397,7 @@ def notify_award_message(instance, created, **kwargs):
                 u"Check out <a href=\"%(user_profile)s\">your profile</a>.") \
                 % {
                     'badge_name':badge.name,
-                    'user_profile':user.get_profile().get_profile_url()
+                    'user_profile':user.get_profile().get_absolute_url()
                 }
 
 #        user.message_set.create(message=msg)
@@ -431,19 +431,19 @@ def record_user_visit(user, timestamp, **kwargs):
     when user visits any pages, we update the last_seen and
     consecutive_days_visit_count
     """
-    prev_last_seen = user.get_profile().last_seen or datetime.datetime.now()
-    user.get_profile().last_seen = timestamp
-    if (user.get_profile().last_seen - prev_last_seen).days == 1:
-        user.consecutive_days_visit_count += 1
+    profile = user.get_profile()
+    
+    prev_last_seen = profile.last_seen or datetime.datetime.now()
+    profile.last_seen = timestamp
+    if (profile.last_seen - prev_last_seen).days == 1:
+        profile.consecutive_days_visit_count += 1
         award_badges_signal.send(None,
-            event = 'site_visit',
-            actor = user,
-            context_object = user,
-            timestamp = timestamp
-        )
-    #somehow it saves on the query as compared to user.save()
-#    User.objects.filter(id = user.id).update(last_seen = timestamp)
-    user.get_profile().save()
+                                 event = 'site_visit',
+                                 actor = user,
+                                 context_object = user,
+                                 timestamp = timestamp)
+
+    profile.save()
 
 
 def record_vote(instance, created, **kwargs):
@@ -668,7 +668,7 @@ def post_anonymous_askbot_content(
     """signal handler, unfortunately extra parameters
     are necessary for the signal machinery, even though
     they are not used in this function"""
-    user.post_anonymous_askbot_content(request, session_key)
+    user.get_profile().post_anonymous_askbot_content(request, session_key)
 
 
 django_signals.post_save.connect(record_award_event, sender=Award)

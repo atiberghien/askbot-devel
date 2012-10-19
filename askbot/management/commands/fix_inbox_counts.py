@@ -8,7 +8,7 @@ def fix_inbox_counts(user):
     old_new_count = user.new_response_count
     old_seen_count = user.seen_response_count
 
-    user.update_response_counts()
+    user.get_profile().update_response_counts()
 
     (changed1, changed2) = (False, False)
     if user.new_response_count != old_new_count:
