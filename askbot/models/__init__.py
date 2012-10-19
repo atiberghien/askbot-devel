@@ -397,7 +397,7 @@ def notify_award_message(instance, created, **kwargs):
                 u"Check out <a href=\"%(user_profile)s\">your profile</a>.") \
                 % {
                     'badge_name':badge.name,
-                    'user_profile':user.get_profile().get_profile_url()
+                    'user_profile':user.get_profile().get_absolute_url()
                 }
 
 #        user.message_set.create(message=msg)

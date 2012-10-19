@@ -2036,10 +2036,6 @@ class AskbotBaseProfile(models.Model):
         else:
             return questions
     
-    #todo: find where this is used and replace with get_absolute_url
-    def get_profile_url(self):
-        return self.get_absolute_url()
-    
     def get_absolute_url(self):
         raise "Must be implemented by concrete profile"
     

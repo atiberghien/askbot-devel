@@ -385,7 +385,7 @@ for the purposes of the AJAX comment editor #}
                     </div>
                     <div class="comment-body">
                         {{comment.html}}
-                        <a class="author" href="{{comment.author.get_profile_url()}}">{{comment.author.username|escape}}</a>
+                        <a class="author" href="{{comment.author.get_profile().get_absolute_url()}}">{{comment.author.username|escape}}</a>
                         <span class="age">&nbsp;({{ timeago(comment.added_at) }})</span>
                         <a id="post-{{comment.id}}-edit"
                             class="edit">{% trans %}edit{% endtrans %}</a>

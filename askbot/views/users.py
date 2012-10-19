@@ -239,7 +239,7 @@ def user_moderate(request, subject, context):
                 user_rep_changed = True
             else:
                 return_to_tab = True
-#        return HttpResponseRedirect(subject.get_profile_url())
+#        return HttpResponseRedirect(subject.get_profile().get_absolute_url())
 
     #need to re-initialize the form even if it was posted, because
     #initial values will most likely be different from the previous
@@ -304,7 +304,7 @@ def edit_user(request, id):
                             actor = user,
                             context_object = user
                         )
-            return HttpResponseRedirect(user.get_profile_url())
+            return HttpResponseRedirect(user.get_profile().get_absolute_url())
     else:
         form = forms.EditUserForm(user)
 
@@ -771,7 +771,7 @@ def user_email_subscriptions(request, user, context):
                 email_feeds_form = forms.EditUserEmailFeedsForm(initial=initial_values)
                 if email_stopped:
                     action_status = _('email updates canceled')
-#        return HttpResponseRedirect(user.get_profile_url())      
+#        return HttpResponseRedirect(user.get_profile().get_absolute_url())      
     else:
         #user may have been created by some app that does not know
         #about the email subscriptions, in that case the call below

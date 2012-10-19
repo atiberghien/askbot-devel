@@ -64,7 +64,7 @@ def get_parser():
 
 def format_mention_in_html(mentioned_user):
     """formats mention as url to the user profile"""
-    url = mentioned_user.get_profile_url()
+    url = mentioned_user.get_profile().get_absolute_url()
     username = mentioned_user.username
     return '<a href="%s">@%s</a>' % (url, username)
 
