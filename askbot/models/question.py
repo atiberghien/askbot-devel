@@ -169,7 +169,6 @@ class ThreadManager(models.Manager):
         """
         from askbot.conf import settings as askbot_settings # Avoid circular import
 
-        profile = request_user.get_profile()
         
         # TODO: add a possibility to see deleted questions
         qs = self.filter(
@@ -251,6 +250,7 @@ class ThreadManager(models.Manager):
 
         #get users tag filters
         if request_user and request_user.is_authenticated():
+            profile = request_user.get_profile()
             #mark questions tagged with interesting tags
             #a kind of fancy annotation, would be nice to avoid it
             interesting_tags = Tag.objects.filter(
