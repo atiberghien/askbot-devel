@@ -548,7 +548,7 @@ def question(request, id):#refactor - long subroutine. display question body, an
         }
     )
 
-    user_can_post_comment =  request.user.is_authenticated() and request.user.can_post_comment()
+    user_can_post_comment =  request.user.is_authenticated() and request.user.get_profile().can_post_comment()
 
     user_already_gave_answer = False
     previous_answer = None
@@ -621,7 +621,7 @@ def get_comment(request):
     """
     id = int(request.GET['id'])
     comment = models.Post.objects.get(post_type='comment', id=id)
-    request.user.assert_can_edit_comment(comment)
+    request.user.get_profile().assert_can_edit_comment(comment)
     return {'text': comment.text}
 
 def widget_questions(request):

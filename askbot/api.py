@@ -29,12 +29,8 @@ def get_info_on_moderation_items(user):
         user = user
     )
 
-    seen_count = messages.filter(
-                    status = models.ActivityAuditStatus.STATUS_SEEN
-                ).count()
-    new_count = messages.filter(
-                    status = models.ActivityAuditStatus.STATUS_NEW
-                ).count()
+    seen_count = messages.filter(status = models.ActivityAuditStatus.STATUS_SEEN).count()
+    new_count = messages.filter(status = models.ActivityAuditStatus.STATUS_NEW).count()
     return {
         'seen_count': seen_count,
         'new_count': new_count
@@ -56,12 +52,10 @@ def get_admin(seed_user_id = None):
 
     if seed_user_id:
         user = models.User.objects.get(id = seed_user_id)#let it raise error here
-        if user.is_administrator() or user.is_moderator():
+        if user.get_profile().is_administrator() or user.get_profile().is_moderator():
             return user
     try:
-        return models.User.objects.filter(
-                        Q(is_superuser=True) | Q(status='m')
-                    ).order_by('id')[0]
+        return models.User.objects.filter(Q(is_superuser=True) | Q(status='m')).order_by('id')[0]
     except IndexError:
         raise models.User.DoesNotExist(
                 """Please add a moderator or an administrator to the forum first

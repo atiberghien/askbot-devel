@@ -230,7 +230,7 @@ class EmailAlertTests(TestCase):
                             timestamp = timestamp
                         )
         if self.follow_question:
-            self.target_user.follow_question(self.question)
+            self.target_user.get_profile().follow_question(self.question)
         return self.question
 
     def maybe_visit_question(self, user = None):
@@ -423,7 +423,7 @@ class EmailAlertTests(TestCase):
     @email_alert_test
     def test_q_ask_delete_answer(self):
         answer = self.proto_test_q_ask()
-        self.other_user.delete_post(answer)
+        self.other_user.get_profile().delete_post(answer)
 
     @email_alert_test
     def test_q_ans(self):

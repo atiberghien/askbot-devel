@@ -143,7 +143,7 @@ class AskbotTestCase(TestCase):
                         )
 
         if follow:
-            user.follow_question(question)
+            user.get_profile().follow_question(question)
 
         return question
 
@@ -201,7 +201,7 @@ class AskbotTestCase(TestCase):
         if user is None:
             user = self.user
 
-        comment = user.post_comment(
+        comment = user.get_profile().post_comment(
                         parent_post = parent_post,
                         body_text = body_text,
                         by_email = by_email,

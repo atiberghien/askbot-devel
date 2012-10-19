@@ -85,7 +85,7 @@ class ActivityManager(models.Manager):
         if mentioned_whom:
             assert(isinstance(mentioned_whom, User))
             mention_activity.add_recipients([mentioned_whom])
-            mentioned_whom.update_response_counts()
+            mentioned_whom.get_profile().update_response_counts()
 
         return mention_activity
 

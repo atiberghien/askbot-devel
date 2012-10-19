@@ -169,6 +169,8 @@ class ThreadManager(models.Manager):
         """
         from askbot.conf import settings as askbot_settings # Avoid circular import
 
+        profile = request_user.get_profile()
+        
         # TODO: add a possibility to see deleted questions
         qs = self.filter(
                 language_code=language_code,
@@ -268,27 +270,27 @@ class ThreadManager(models.Manager):
             meta_data['interesting_tag_names'] = [tag.name for tag in interesting_tags]
             meta_data['ignored_tag_names'] = [tag.name for tag in ignored_tags]
 
-            if request_user.display_tag_filter_strategy == const.INCLUDE_INTERESTING and (interesting_tags or request_user.has_interesting_wildcard_tags()):
+            if profile.display_tag_filter_strategy == const.INCLUDE_INTERESTING and (interesting_tags or profile.has_interesting_wildcard_tags()):
                 #filter by interesting tags only
                 interesting_tag_filter = models.Q(tags__in=interesting_tags)
-                if request_user.has_interesting_wildcard_tags():
-                    interesting_wildcards = request_user.interesting_tags.split()
+                if profile.get_has_interesting_wildcard_tags():
+                    interesting_wildcards = profile.interesting_tags.split()
                     extra_interesting_tags = Tag.objects.get_by_wildcards(interesting_wildcards)
                     interesting_tag_filter |= models.Q(tags__in=extra_interesting_tags)
                 qs = qs.filter(interesting_tag_filter)
 
             # get the list of interesting and ignored tags (interesting_tag_names, ignored_tag_names) = (None, None)
-            if request_user.display_tag_filter_strategy == const.EXCLUDE_IGNORED and (ignored_tags or request_user.has_ignored_wildcard_tags()):
+            if profile.display_tag_filter_strategy == const.EXCLUDE_IGNORED and (ignored_tags or profile.has_ignored_wildcard_tags()):
                 #exclude ignored tags if the user wants to
                 qs = qs.exclude(tags__in=ignored_tags)
-                if request_user.has_ignored_wildcard_tags():
-                    ignored_wildcards = request_user.ignored_tags.split()
+                if profile.has_ignored_wildcard_tags():
+                    ignored_wildcards = profile.ignored_tags.split()
                     extra_ignored_tags = Tag.objects.get_by_wildcards(ignored_wildcards)
                     qs = qs.exclude(tags__in = extra_ignored_tags)
 
             if askbot_settings.USE_WILDCARD_TAGS:
-                meta_data['interesting_tag_names'].extend(request_user.interesting_tags.split())
-                meta_data['ignored_tag_names'].extend(request_user.ignored_tags.split())
+                meta_data['interesting_tag_names'].extend(profile.interesting_tags.split())
+                meta_data['ignored_tag_names'].extend(profile.ignored_tags.split())
 
         QUESTION_ORDER_BY_MAP = {
             'age-desc': '-added_at',
@@ -434,6 +436,10 @@ class Thread(models.Model):
             return post
         self._question_cache = Post.objects.get(post_type='question', thread=self)
         return self._question_cache
+
+    @property
+    def question(self):
+        return self._question_post()
 
     def get_absolute_url(self):
         return self._question_post().get_absolute_url(thread = self)
@@ -963,7 +969,6 @@ class AnonymousQuestion(DraftContent):
 
     def publish(self,user):
         added_at = datetime.datetime.now()
-        #todo: wrong - use User.post_question() instead
         Thread.objects.create_new(
             title = self.title,
             added_at = added_at,

@@ -70,7 +70,7 @@ def manage_inbox(request):
                         for memo in memo_set:
                             activity_type = memo.activity.activity_type
                             if activity_type == const.TYPE_ACTIVITY_MARK_OFFENSIVE:
-                                request.user.flag_post(
+                                request.user.get_profile().flag_post(
                                     post = memo.activity.content_object,
                                     cancel_all = True
                                 )
@@ -80,7 +80,7 @@ def manage_inbox(request):
                                     const.TYPE_ACTIVITY_MODERATED_POST_EDIT
                                 ):
                                 post_revision = memo.activity.content_object
-                                request.user.approve_post_revision(post_revision)
+                                request.user.get_profile().approve_post_revision(post_revision)
                                 memo.delete()
 
                     #elif action_type == 'close':
@@ -95,7 +95,7 @@ def manage_inbox(request):
                                 post = content_object.post
                             else:
                                 post = content_object
-                            request.user.delete_post(post)
+                            request.user.get_profile().delete_post(post)
                             reject_reason = models.PostFlagReason.objects.get(
                                                     id = post_data['reject_reason_id']
                                                 )
@@ -117,7 +117,7 @@ def manage_inbox(request):
                             )
                             memo.delete()
 
-                    user.update_response_counts()
+                    user.get_profile().update_response_counts()
 
                     response_data['success'] = True
                     data = simplejson.dumps(response_data)
@@ -156,18 +156,18 @@ def process_vote(user = None, vote_direction = None, post = None):
             'Sorry, anonymous users cannot vote'
         ))
 
-    user.assert_can_vote_for_post(post = post, direction = vote_direction)
-    vote = user.get_old_vote_for_post(post)
+    user.get_profile().assert_can_vote_for_post(post = post, direction = vote_direction)
+    vote = user.get_profile().get_old_vote_for_post(post)
     response_data = {}
     if vote != None:
-        user.assert_can_revoke_old_vote(vote)
+        user.get_profile().assert_can_revoke_old_vote(vote)
         score_delta = vote.cancel()
         response_data['count'] = post.score + score_delta
         response_data['status'] = 1 #this means "cancel"
 
     else:
         #this is a new vote
-        votes_left = user.get_unused_votes_today()
+        votes_left = user.get_profile().get_unused_votes_today()
         if votes_left <= 0:
             raise exceptions.PermissionDenied(
                             _('Sorry you ran out of votes for today')
@@ -181,9 +181,9 @@ def process_vote(user = None, vote_direction = None, post = None):
             response_data['message'] = msg
 
         if vote_direction == 'up':
-            vote = user.upvote(post = post)
+            vote = user.get_profile().upvote(post = post)
         else:
-            vote = user.downvote(post = post)
+            vote = user.get_profile().downvote(post = post)
 
         response_data['count'] = post.score
         response_data['status'] = 0 #this means "not cancel", normal operation
@@ -259,10 +259,10 @@ def vote(request, id):
                 answer = get_object_or_404(models.Post, post_type='answer', id = answer_id)
                 # make sure question author is current user
                 if answer.accepted():
-                    request.user.unaccept_best_answer(answer)
+                    request.user.get_profile().unaccept_best_answer(answer)
                     response_data['status'] = 1 #cancelation
                 else:
-                    request.user.accept_best_answer(answer)
+                    request.user.get_profile().accept_best_answer(answer)
 
                 ####################################################################
                 answer.thread.update_summary_html() # regenerate question/thread summary html
@@ -311,7 +311,7 @@ def vote(request, id):
                 id = request.POST.get('postId')
                 post = get_object_or_404(models.Post, post_type='answer', id=id)
 
-            request.user.flag_post(post)
+            request.user.get_profile().flag_post(post)
 
             response_data['count'] = post.offensive_flag_count
             response_data['success'] = 1
@@ -325,7 +325,7 @@ def vote(request, id):
                 id = request.POST.get('postId')
                 post = get_object_or_404(models.Post, post_type='answer', id=id)
 
-            request.user.flag_post(post, cancel = True)
+            request.user.get_profile().flag_post(post, cancel = True)
 
             response_data['count'] = post.offensive_flag_count
             response_data['success'] = 1
@@ -338,7 +338,7 @@ def vote(request, id):
                 id = request.POST.get('postId')
                 post = get_object_or_404(models.Post, id=id)
 
-            request.user.flag_post(post, cancel_all = True)
+            request.user.get_profile().flag_post(post, cancel_all = True)
 
             response_data['count'] = post.offensive_flag_count
             response_data['success'] = 1
@@ -351,9 +351,9 @@ def vote(request, id):
                 post = get_object_or_404(models.Post, post_type='answer', id=id)
 
             if post.deleted == True:
-                request.user.restore_post(post = post)
+                request.user.get_profile().restore_post(post = post)
             else:
-                request.user.delete_post(post = post)
+                request.user.get_profile().delete_post(post = post)
 
         elif request.is_ajax() and request.method == 'POST':
 
@@ -366,7 +366,7 @@ def vote(request, id):
 
             #accept answer
             if vote_type == '4':
-                fave = request.user.toggle_favorite_question(question)
+                fave = request.user.get_profile().toggle_favorite_question(question)
                 response_data['count'] = models.FavoriteQuestion.objects.filter(thread = question.thread).count()
                 if fave == False:
                     response_data['status'] = 1
@@ -375,7 +375,7 @@ def vote(request, id):
                 user = request.user
                 if user.is_authenticated():
                     if user not in question.thread.followed_by.all():
-                        user.follow_question(question)
+                        user.get_profile().follow_question(question)
 #                        if askbot_settings.EMAIL_VALIDATION == True \
 #                            and user.email_isvalid == False:
 #
@@ -386,7 +386,7 @@ def vote(request, id):
 #                                        '<a href="%(details_url)s">more details here</a>'
 #                                    ) % {'email':user.email,'details_url':reverse('faq') + '#validate'}
 
-                    subscribed = user.subscribe_for_followed_question_alerts()
+                    subscribed = user.get_profile().subscribe_for_followed_question_alerts()
                     if subscribed:
                         if 'message' in response_data:
                             response_data['message'] += '<br/>'
@@ -400,7 +400,7 @@ def vote(request, id):
             elif vote_type == '12':#unsubscribe q updates
                 user = request.user
                 if user.is_authenticated():
-                    user.unfollow_question(question)
+                    user.get_profile().unfollow_question(question)
         else:
             response_data['success'] = 0
             response_data['message'] = u'Request mode is not supported. Please try again.'
@@ -642,10 +642,10 @@ def reopen(request, id):#re-open question
     # open question
     try:
         if request.method == 'POST' :
-            request.user.reopen_question(question)
+            request.user.get_profile().reopen_question(question)
             return HttpResponseRedirect(question.get_absolute_url())
         else:
-            request.user.assert_can_reopen_question(question)
+            request.user.get_profile().assert_can_reopen_question(question)
             closed_by_profile_url = question.thread.closed_by.get_profile().get_absolute_url()
             closed_by_username = question.thread.closed_by.username
             data = {
@@ -669,7 +669,7 @@ def swap_question_with_answer(request):
     or moderators
     """
     if request.user.is_authenticated():
-        if request.user.is_administrator() or request.user.is_moderator():
+        if request.user.get_profile().is_administrator() or request.user.get_profile().is_moderator():
             answer = models.Post.objects.get_answers().get(id = request.POST['answer_id'])
             new_question = answer.swap_with_question(new_title = request.POST['new_title'])
             return {
@@ -713,9 +713,9 @@ def delete_post(request):
             id = post_id
         )
         if form.cleaned_data['cancel_vote']:
-            request.user.restore_post(post)
+            request.user.get_profile().restore_post(post)
         else:
-            request.user.delete_post(post)
+            request.user.get_profile().delete_post(post)
     else:
         raise ValueError
     return {'is_deleted': post.deleted}
@@ -854,13 +854,13 @@ def join_or_leave_group(request):
     group_id = IntegerField().clean(request.POST['group_id'])
     group = models.Tag.objects.get(id = group_id)
 
-    if request.user.is_group_member(group):
+    if request.user.get_profile().is_group_member(group):
         action = 'remove'
         is_member = False
     else:
         action = 'add'
         is_member = True
-    request.user.edit_group_membership(
+    request.user.get_profile().edit_group_membership(
         user = request.user,
         group = group,
         action = action
@@ -882,13 +882,13 @@ def save_post_reject_reason(request):
         title = form.cleaned_data['title']
         details = form.cleaned_data['details']
         if form.cleaned_data['reason_id'] is None:
-            reason = request.user.create_post_reject_reason(
+            reason = request.user.get_profile().create_post_reject_reason(
                 title = title, details = details
             )
         else:
             reason_id = form.cleaned_data['reason_id']
             reason = models.PostFlagReason.objects.get(id = reason_id)
-            request.user.edit_post_reject_reason(
+            request.user.get_profile().edit_post_reject_reason(
                 reason, title = title, details = details
             )
         return {

@@ -89,12 +89,12 @@ class Command(NoArgsCommand):
             # gives good randomized data
             if not active_question is None:
                 if last_vote:
-                    user.downvote(active_question)
+                    user.get_profile().downvote(active_question)
                     self.print_if_verbose("%s downvoted a question"%(
                                         user.username
                                     ))
                 else:
-                    user.upvote(active_question)
+                    user.get_profile().upvote(active_question)
                     self.print_if_verbose("%s upvoted a question"%(
                                         user.username
                                     ))
@@ -130,18 +130,18 @@ class Command(NoArgsCommand):
                 # gives good randomized data
                 if not active_answer is None:
                     if last_vote:
-                        user.downvote(active_answer)
+                        user.get_profile().downvote(active_answer)
                         self.print_if_verbose("%s downvoted an answer"%(
                                             user.username
                                         ))
                     else:
-                        user.upvote(active_answer)
+                        user.get_profile().upvote(active_answer)
                         self.print_if_verbose("%s upvoted an answer"%(
                                             user.username
                                         ))
                     last_vote = ~last_vote
 
-                active_answer = user.post_answer(
+                active_answer = user.get_profile().post_answer(
                         question = active_question,
                         body_text = ANSWER_TEMPLATE,
                         follow = True
@@ -150,14 +150,14 @@ class Command(NoArgsCommand):
                                             user.username
                                         ))
                 # Upvote the active question
-                user.upvote(active_question)
+                user.get_profile().upvote(active_question)
                 # Follow the active question
-                user.follow_question(active_question)
+                user.get_profile().follow_question(active_question)
                 self.print_if_verbose("%s followed the active question"%(
                                                 user.username)
                                             )
                 # Subscribe to the active question
-                user.subscribe_for_followed_question_alerts()
+                user.get_profile().subscribe_for_followed_question_alerts()
                 self.print_if_verbose("%s subscribed to followed questions"%(
                                                 user.username)
                                             )
@@ -172,26 +172,26 @@ class Command(NoArgsCommand):
         active_answer_comment = None
 
         for user in users[:NUM_COMMENTS]:
-            active_question_comment = user.post_comment(
+            active_question_comment = user.get_profile().post_comment(
                                     parent_post = active_question,
                                     body_text = COMMENT_TEMPLATE
                                 )
             self.print_if_verbose("%s posted a question comment"%user.username)
-            active_answer_comment = user.post_comment(
+            active_answer_comment = user.get_profile().post_comment(
                                     parent_post = active_answer,
                                     body_text = COMMENT_TEMPLATE
                                 )
             self.print_if_verbose("%s posted an answer comment"%user.username)
 
             # Upvote the active answer
-            user.upvote(active_answer)
+            user.get_profile().upvote(active_answer)
 
         # Upvote active comments
         if active_question_comment and active_answer_comment:
             num_upvotees = NUM_COMMENTS - 1
             for user in users[:num_upvotees]:
-                user.upvote(active_question_comment)
-                user.upvote(active_answer_comment)
+                user.get_profile().upvote(active_question_comment)
+                user.get_profile().upvote(active_answer_comment)
 
         return active_question_comment, active_answer_comment
 
@@ -223,7 +223,7 @@ class Command(NoArgsCommand):
                                 users, active_question, active_answer)
 
         # Edit the active question, answer and comments
-        active_question.author.edit_question(
+        active_question.author.get_profile().edit_question(
                             question = active_question,
                             title = TITLE_TEMPLATE % "EDITED",
                             body_text = CONTENT_TEMPLATE,
@@ -232,27 +232,27 @@ class Command(NoArgsCommand):
                         )
         self.print_if_verbose("User has edited the active question")
 
-        active_answer.author.edit_answer(
+        active_answer.author.get_profile().edit_answer(
                             answer = active_answer,
                             body_text = COMMENT_TEMPLATE,
                             force = True
                         )
         self.print_if_verbose("User has edited the active answer")
 
-        active_answer_comment.author.edit_comment(
+        active_answer_comment.author.get_profile().edit_comment(
                             comment_post = active_answer_comment,
                             body_text = ANSWER_TEMPLATE
                         )
         self.print_if_verbose("User has edited the active answer comment")
 
-        active_question_comment.author.edit_comment(
+        active_question_comment.author.get_profile().edit_comment(
                             comment_post = active_question_comment,
                             body_text = ANSWER_TEMPLATE
                         )
         self.print_if_verbose("User has edited the active question comment")
 
         # Accept best answer
-        active_question.author.accept_best_answer(
+        active_question.author.get_profile().accept_best_answer(
                             answer = active_answer,
                             force = True,
                         )

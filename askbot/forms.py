@@ -756,8 +756,8 @@ class PostAsSomeoneForm(forms.Form):
         """
         username = self.cleaned_data['post_author_username']
         email= self.cleaned_data['post_author_email']
-        if user.is_administrator() and username and email:
-            post_user = user.get_or_create_fake_user(username, email)
+        if user.get_profile().is_administrator() and username and email:
+            post_user = user.get_profile().get_or_create_fake_user(username, email)
         else:
             post_user = user
         return post_user

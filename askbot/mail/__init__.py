@@ -338,10 +338,10 @@ def process_emailed_question(
                         email__iexact = email_address
                     )
 
-            if user.can_post_by_email() == False:
+            if user.get_profile().can_post_by_email() == False:
                 raise PermissionDenied(messages.insufficient_reputation(user))
 
-            if user.email_isvalid == False:
+            if user.get_profile().email_isvalid == False:
                 reply_to = ReplyAddress.objects.create_new(
                     user = user,
                     reply_action = 'validate_email'
@@ -357,12 +357,12 @@ def process_emailed_question(
             if tags:
                 tagnames += ' ' + ' '.join(tags)
 
-            stripped_body_text = user.strip_email_signature(body_text)
-            if stripped_body_text == body_text and user.email_signature:
+            stripped_body_text = user.get_profile().strip_email_signature(body_text)
+            if stripped_body_text == body_text and user.get_profile().email_signature:
                 #todo: send an email asking to update the signature
                 raise ValueError('email signature changed')
 
-            user.post_question(
+            user.get_profile().post_question(
                 title = title,
                 tags = tagnames.strip(),
                 body_text = stripped_body_text,

@@ -8,7 +8,6 @@ from django.conf import settings as django_settings
 from django.core import exceptions as django_exceptions
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
-from django.utils.html import escape
 from django.utils.translation import ugettext as _
 from django.utils.translation import ungettext
 
@@ -34,13 +33,9 @@ from askbot.models.repute import Repute, Vote
 from askbot.utils.decorators import auto_now_timestamp
 from askbot.utils.slug import slugify
 
-from django.utils.safestring import mark_safe
-
 from userena.models import UserenaLanguageBaseProfile
 from django.core.urlresolvers import reverse
 from django.contrib import messages
-from userena.utils import get_profile_model
-
 
 MARKED_TAG_PROPERTY_MAP = {
     'good': 'interesting_tags',
@@ -787,7 +782,7 @@ class AskbotBaseProfile(models.Model):
             )
     
         _assert_user_can(
-            user = self.user,
+            profile = self,
             post = question,
             owner_can = True,
             suspended_owner_cannot = True,
@@ -939,7 +934,7 @@ class AskbotBaseProfile(models.Model):
         min_rep_setting = askbot_settings.MIN_REP_TO_RETAG_OTHERS_QUESTIONS
     
         _assert_user_can(
-            profile = self.user,
+            profile = self,
             post = question,
             owner_can = True,
             blocked_error_message = blocked_error_message,
@@ -966,7 +961,7 @@ class AskbotBaseProfile(models.Model):
         min_rep_setting = askbot_settings.MIN_REP_TO_DELETE_OTHERS_COMMENTS
     
         _assert_user_can(
-            profile = self.user,
+            profile = self,
             post = comment,
             owner_can = True,
             blocked_error_message = blocked_error_message,
@@ -1071,10 +1066,10 @@ class AskbotBaseProfile(models.Model):
                 aa.save()
             #maybe add pending posts message?
         else:
-            if self.user.is_blocked():
+            if self.user.get_profile().is_blocked():
                 msg = get_i18n_message('BLOCKED_USERS_CANNOT_POST')
                 messages.error(request, msg)
-            elif self.user.is_suspended():
+            elif self.user.get_profile().is_suspended():
                 msg = get_i18n_message('SUSPENDED_USERS_CANNOT_POST')
                 messages.error(request, msg)
             else:
@@ -2407,7 +2402,6 @@ class AskbotProfile(AskbotBaseProfile, UserenaLanguageBaseProfile):
         app_label = 'askbot'
         
     def __getattr__(self, name):
-        info("getattr %s" % name)
         if name in [f.name for f in User._meta.fields if f.name != 'id']:
             return object.__getattribute__(self.user, name)
         
@@ -2415,7 +2409,6 @@ class AskbotProfile(AskbotBaseProfile, UserenaLanguageBaseProfile):
     
     def __setattr__(self, name, value):
         if name in [f.name for f in User._meta.fields if f.name != 'id']:
-            info("setattr %s" % name)
             object.__setattr__(self.user, name, value)
         else:
             object.__setattr__(self, name, value)
@@ -2436,8 +2429,8 @@ def propragate_user_save(sender, instance, created, **kwargs):
     """
     if not created:
         if hasattr(instance, 'profile_must_be_saved') and instance.profile_must_be_saved:
-            instance.get_profile().save()
             instance.profile_must_be_save = False
+            instance.get_profile().save()
 
 if django_settings.AUTH_PROFILE_MODULE == "askbot.AskbotProfile":
     django_signals.post_save.connect(create_user_profile, sender=User)

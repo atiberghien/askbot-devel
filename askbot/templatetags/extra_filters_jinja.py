@@ -184,7 +184,7 @@ def make_template_filter_from_permission_assertion(
         if user.is_anonymous():
             return False
 
-        assertion = getattr(user, assertion_name)
+        assertion = getattr(user.get_profile(), assertion_name)
         if allowed_exception:
             try:
                 assertion(post)

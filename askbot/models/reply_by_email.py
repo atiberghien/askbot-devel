@@ -131,7 +131,7 @@ class ReplyAddress(models.Model):
         """
         result = None
         if self.post.post_type == 'answer':
-            result = self.user.post_comment(
+            result = self.user.get_profile().post_comment(
                                         self.post,
                                         body_text,
                                         by_email = True
@@ -147,13 +147,13 @@ class ReplyAddress(models.Model):
                 reply_action = self.reply_action
 
             if reply_action == 'post_answer':
-                result = self.user.post_answer(
+                result = self.user.get_profile().post_answer(
                                             self.post,
                                             body_text,
                                             by_email = True
                                         )
             elif reply_action == 'post_comment':
-                result = self.user.post_comment(
+                result = self.user.get_profile().post_comment(
                                             self.post,
                                             body_text,
                                             by_email = True
@@ -164,7 +164,7 @@ class ReplyAddress(models.Model):
                 )
                 return None#todo: there may be a better action to take here...
         elif self.post.post_type == 'comment':
-            result = self.user.post_comment(
+            result = self.user.get_profile().post_comment(
                                     self.post.parent,
                                     body_text,
                                     by_email = True

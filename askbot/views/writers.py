@@ -65,7 +65,7 @@ def upload(request):#ajax upload file to a question or answer
             msg = _('Sorry, anonymous users cannot upload files')
             raise exceptions.PermissionDenied(msg)
 
-        request.user.assert_can_upload_file()
+        request.user.get_profile().assert_can_upload_file()
 
         #todo: build proper form validation
         file_name_prefix = request.POST.get('file_name_prefix', '')
@@ -164,7 +164,7 @@ def import_data(request):
     """
     #allow to use this view to site admins
     #or when the forum in completely empty
-    if request.user.is_anonymous() or (not request.user.is_administrator()):
+    if request.user.is_anonymous() or (not request.user.get_profile().is_administrator()):
         if models.Post.objects.get_questions().exists():
             raise Http404
 
@@ -229,7 +229,7 @@ def ask(request):#view used to ask a new question
                     language_code = translation.get_language()
                     site = Site.objects.get_current()
 
-                    question = user.post_question(
+                    question = user.get_profile().post_question(
                         language_code = language_code,
                         site= site,
                         title = title,
@@ -289,12 +289,12 @@ def retag_question(request, id):
     question = get_object_or_404(models.Post, id=id)
 
     try:
-        request.user.assert_can_retag_question(question)
+        request.user.get_profile().assert_can_retag_question(question)
         if request.method == 'POST':
             form = forms.RetagQuestionForm(question, request.POST)
             if form.is_valid():
                 if form.has_changed():
-                    request.user.retag_question(question=question, tags=form.cleaned_data['tags'])
+                    request.user.get_profile().retag_question(question=question, tags=form.cleaned_data['tags'])
                 if request.is_ajax():
                     response_data = {
                         'success': True,
@@ -346,7 +346,7 @@ def edit_question(request, id):
     latest_revision = question.get_latest_revision()
     revision_form = None
     try:
-        request.user.assert_can_edit_question(question)
+        request.user.get_profile().assert_can_edit_question(question)
         if request.method == 'POST':
             if 'select_revision' in request.POST:
                 #revert-type edit - user selected previous revision
@@ -394,7 +394,7 @@ def edit_question(request, id):
 
                         user = form.get_post_user(request.user)
 
-                        user.edit_question(
+                        user.get_profile().edit_question(
                             question = question,
                             title = form.cleaned_data['title'],
                             body_text = form.cleaned_data['text'],
@@ -434,7 +434,7 @@ def edit_answer(request, id):
     answer = get_object_or_404(models.Post, id=id)
     latest_revision = answer.get_latest_revision()
     try:
-        request.user.assert_can_edit_answer(answer)
+        request.user.get_profile().assert_can_edit_answer(answer)
         latest_revision = answer.get_latest_revision()
         if request.method == "POST":
             if 'select_revision' in request.POST:
@@ -514,7 +514,7 @@ def answer(request, id):#process a new answer
 
                     user = form.get_post_user(request.user)
 
-                    answer = user.post_answer(
+                    answer = user.get_profile().post_answer(
                                         question = question,
                                         body_text = text,
                                         follow = follow,
@@ -554,7 +554,7 @@ def __generate_comments_json(obj, user):#non-view generates json data for the po
 
         if user and user.is_authenticated():
             try:
-                user.assert_can_delete_comment(comment)
+                user.get_profile().assert_can_delete_comment(comment)
                 #/posts/392845/comments/219852/delete
                 #todo translate this url
                 is_deletable = True
@@ -609,7 +609,7 @@ def post_comments(request):#generic ajax handler to load comments to an object
                         '<a href="%(sign_in_url)s">sign in</a>.') % \
                         {'sign_in_url': url_utils.get_login_url()}
                 raise exceptions.PermissionDenied(msg)
-            user.post_comment(parent_post=obj, body_text=request.POST.get('comment'))
+            user.get_profile().post_comment(parent_post=obj, body_text=request.POST.get('comment'))
             response = __generate_comments_json(obj, user)
         except exceptions.PermissionDenied, e:
             response = HttpResponseForbidden(unicode(e), mimetype="application/json")
@@ -626,7 +626,7 @@ def edit_comment(request):
     comment_id = int(request.POST['comment_id'])
     comment_post = models.Post.objects.get(post_type='comment', id=comment_id)
 
-    request.user.edit_comment(comment_post=comment_post, body_text = request.POST['comment'])
+    request.user.get_profile().edit_comment(comment_post=comment_post, body_text = request.POST['comment'])
 
     is_deletable = template_filters.can_delete_comment(comment_post.author, comment_post)
     is_editable = template_filters.can_edit_comment(comment_post.author, comment_post)
@@ -661,7 +661,7 @@ def delete_comment(request):
 
             comment_id = request.POST['comment_id']
             comment = get_object_or_404(models.Post, post_type='comment', id=comment_id)
-            request.user.assert_can_delete_comment(comment)
+            request.user.get_profile().assert_can_delete_comment(comment)
 
             parent = comment.parent
             comment.delete()
