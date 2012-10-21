@@ -10,7 +10,7 @@ import datetime
 import logging
 import urllib
 import operator
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render_to_response
 from django.http import HttpResponseRedirect, HttpResponse, Http404, HttpResponseNotAllowed
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
 from django.template import Context
@@ -46,6 +46,7 @@ from askbot.skins.loaders import render_into_skin, get_template #jinja2 template
 from askbot.models import Post, Vote
 from django.contrib import messages
 from askbot.utils.functions import get_tag_font_size
+from django.template.context import RequestContext
 
 INDEX_PAGE_SIZE = 30
 INDEX_AWARD_SIZE = 15
@@ -321,7 +322,10 @@ def tags(request):#view showing a listing of available tags - plain list
 
 @csrf.csrf_protect
 #@cache_page(60 * 5)
-def question(request, id):#refactor - long subroutine. display question body, answers and comments
+def question(request, id, 
+             template_name="question.html", 
+             jinja2_rendering=True,
+             extra_context=None):#refactor - long subroutine. display question body, answers and comments
     """view that displays body of the question and
     all answers to it
     """
@@ -383,13 +387,13 @@ def question(request, id):#refactor - long subroutine. display question body, an
         return HttpResponseRedirect(reverse('forum-index'))
 
     #redirect if slug in the url is wrong
-    if request.path.split('/')[-2] != question_post.slug:
-        logging.debug('no slug match!')
-        question_url = '?'.join((
-                            question_post.get_absolute_url(),
-                            urllib.urlencode(request.GET)
-                        ))
-        return HttpResponseRedirect(question_url)
+#    if request.path.split('/')[-2] != question_post.slug:
+#        logging.debug('no slug match!')
+#        question_url = '?'.join((
+#                            question_post.get_absolute_url(),
+#                            urllib.urlencode(request.GET)
+#                        ))
+#        return HttpResponseRedirect(question_url)
 
 
     #resolve comment and answer permalinks
@@ -584,8 +588,16 @@ def question(request, id):#refactor - long subroutine. display question body, an
         'show_comment': show_comment,
         'show_comment_position': show_comment_position,
     }
-
-    return render_into_skin('question.html', data, request)
+    
+    if extra_context:
+        data.update(extra_context)
+    
+    if not jinja2_rendering :
+        return render_to_response(template_name,
+                                  dictionary=data,
+                                  context_instance=RequestContext(request))
+    
+    return render_into_skin(template_name, data, request)
 
 def revisions(request, id, post_type = None):
     assert post_type in ('question', 'answer')
