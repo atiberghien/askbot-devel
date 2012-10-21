@@ -498,7 +498,7 @@ class BadgeTests(AskbotTestCase):
         yesterday = datetime.datetime.now() - datetime.timedelta(1)
         self.u1.last_seen = yesterday
         prev_visit_count = settings.ENTHUSIAST_BADGE_MIN_DAYS - 1
-        self.u1.consecutive_days_visit_count = prev_visit_count
+        self.u1.get_profile().consecutive_days_visit_count = prev_visit_count
         self.u1.save()
         self.assert_have_badge('enthusiast', self.u1, 0)
         self.client.login(method = 'force', user_id = self.u1.id)

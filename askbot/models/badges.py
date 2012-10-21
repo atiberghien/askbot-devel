@@ -718,7 +718,7 @@ class Enthusiast(Badge):
     def consider_award(self, actor = None,
             context_object = None, timestamp = None):
         min_days = askbot_settings.ENTHUSIAST_BADGE_MIN_DAYS
-        if actor.consecutive_days_visit_count == min_days:
+        if actor.get_profile().consecutive_days_visit_count == min_days:
             return self.award(actor, context_object, timestamp)
         return False
 
