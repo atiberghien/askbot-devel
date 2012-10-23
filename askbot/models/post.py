@@ -1216,7 +1216,7 @@ class Post(models.Model):
             if user.is_anonymous():
                 raise exceptions.QuestionHidden(message)
             try:
-                user.assert_can_see_deleted_post(self)
+                user.get_profile().assert_can_see_deleted_post(self)
             except django_exceptions.PermissionDenied:
                 raise exceptions.QuestionHidden(message)
 
@@ -1239,7 +1239,7 @@ class Post(models.Model):
             if user.is_anonymous():
                 raise exceptions.AnswerHidden(message)
             try:
-                user.assert_can_see_deleted_post(self)
+                user.get_profile().assert_can_see_deleted_post(self)
             except django_exceptions.PermissionDenied:
                 raise exceptions.AnswerHidden(message)
 

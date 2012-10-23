@@ -465,7 +465,7 @@ def edit_answer(request, id):
                 if form.is_valid():
                     if form.has_changed():
                         user = form.get_post_user(request.user)
-                        user.edit_answer(
+                        user.get_profile().edit_answer(
                                 answer = answer,
                                 body_text = form.cleaned_data['text'],
                                 revision_comment = form.cleaned_data['summary'],

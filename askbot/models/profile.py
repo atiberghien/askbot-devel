@@ -143,7 +143,7 @@ def _assert_user_can(profile = None,
         error_message = blocked_error_message
     elif post and owner_can and profile.user == post.get_owner():
         if owner_min_rep_setting:
-            if post.get_owner().reputation < owner_min_rep_setting:
+            if post.get_owner().get_profile().reputation < owner_min_rep_setting:
                 if profile.is_moderator() or profile.is_administrator():
                     return
                 else:

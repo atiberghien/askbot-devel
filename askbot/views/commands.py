@@ -505,10 +505,10 @@ def save_tag_wiki_text(request):
         text = form.cleaned_data['text'] or ' '#a hack to save blank data
         tag = models.Tag.objects.get(id = tag_id)
         if tag.tag_wiki:
-            request.user.edit_post(tag.tag_wiki, body_text = text)
+            request.user.get_profile().edit_post(tag.tag_wiki, body_text = text)
             tag_wiki = tag.tag_wiki
         else:
-            tag_wiki = request.user.post_tag_wiki(tag, body_text = text)
+            tag_wiki = request.user.get_profile().post_tag_wiki(tag, body_text = text)
         return {'html': tag_wiki.html}
     else:
         raise ValueError('invalid post data')
@@ -536,7 +536,7 @@ def subscribe_for_tags(request):
     if request.user.is_authenticated():
         if request.method == 'POST':
             if 'ok' in request.POST:
-                request.user.mark_tags(
+                request.user.get_profile().mark_tags(
                             pure_tag_names,
                             wildcards,
                             reason = 'good',
@@ -591,11 +591,11 @@ def set_tag_filter_strategy(request):
     assert(filter_type in ('display', 'email'))
     if filter_type == 'display':
         assert(filter_value in dict(const.TAG_DISPLAY_FILTER_STRATEGY_CHOICES))
-        request.user.display_tag_filter_strategy = filter_value
+        request.user.get_profile().display_tag_filter_strategy = filter_value
     else:
         assert(filter_value in dict(const.TAG_EMAIL_FILTER_STRATEGY_CHOICES))
-        request.user.email_tag_filter_strategy = filter_value
-    request.user.save()
+        request.user.get_profile().email_tag_filter_strategy = filter_value
+    request.user.get_profile().save()
     return HttpResponse('', mimetype = "application/json")
 
 
@@ -612,13 +612,13 @@ def close(request, id):#close question
             if form.is_valid():
                 reason = form.cleaned_data['reason']
 
-                request.user.close_question(
+                request.user.get_profile().close_question(
                                         question = question,
                                         reason = reason
                                     )
             return HttpResponseRedirect(question.get_absolute_url())
         else:
-            request.user.assert_can_close_question(question)
+            request.user.get_profile().assert_can_close_question(question)
             form = forms.CloseForm()
             data = {
                 'question': question,
