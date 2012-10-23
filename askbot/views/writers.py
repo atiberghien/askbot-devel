@@ -490,9 +490,9 @@ def edit_answer(request, id):
         return HttpResponseRedirect(answer.get_absolute_url())
 
 #todo: rename this function to post_new_answer
-@decorators.check_authorization_to_post(_('Please log in to answer questions'))
-@decorators.check_spam('text')
-def answer(request, id):#process a new answer
+#@decorators.check_authorization_to_post(_('Please log in to answer questions'))
+#@decorators.check_spam('text')
+def answer(request, id, redirect_to=None):#process a new answer
     """view that posts new answer
 
     anonymous users post into anonymous storage
@@ -521,11 +521,11 @@ def answer(request, id):#process a new answer
                                         wiki = wiki,
                                         timestamp = update_time,
                                     )
-                    return HttpResponseRedirect(answer.get_absolute_url())
+                    return HttpResponseRedirect(redirect_to or answer.get_absolute_url())
                 except askbot_exceptions.AnswerAlreadyGiven, e:
                     messages.error(request, unicode(e))
                     answer = question.thread.get_answers_by_user(request.user)[0]
-                    return HttpResponseRedirect(answer.get_absolute_url())
+                    return HttpResponseRedirect(redirect_to or answer.get_absolute_url())
                 except exceptions.PermissionDenied, e:
                     messages.error(request, unicode(e))
             else:
@@ -540,7 +540,7 @@ def answer(request, id):#process a new answer
                 )
                 return HttpResponseRedirect(url_utils.get_login_url())
 
-    return HttpResponseRedirect(question.get_absolute_url())
+    return HttpResponseRedirect(redirect_to or question.get_absolute_url())
 
 def __generate_comments_json(obj, user):#non-view generates json data for the post comments
     """non-view generates json data for the post comments

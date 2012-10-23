@@ -67,7 +67,17 @@ def index(request):#generates front page - shows listing of questions sorted in 
     """
     return HttpResponseRedirect(reverse('questions'))
 
-def questions(request, **kwargs):
+def questions(request, 
+              template_name="main_page.html", 
+              thread_ids=None,
+              jinja2_rendering=True,
+              extra_context=None,
+              scope=None, 
+              sort=None, 
+              query=None, 
+              tags=None, 
+              author=None, 
+              page=None):
     """
     List of Questions, Tagged questions, and Unanswered questions.
     matching search query or user selection
@@ -80,13 +90,23 @@ def questions(request, **kwargs):
     if request.method != 'GET':
         return HttpResponseNotAllowed(['GET'])
 
-    search_state = SearchState(user_logged_in=request.user.is_authenticated(), **kwargs)
+    search_state = SearchState(user_logged_in=request.user.is_authenticated(),
+                               scope=scope, 
+                               sort=sort, 
+                               query=query, 
+                               tags=tags, 
+                               author=author,
+                               page=page)
+    
     page_size = int(askbot_settings.DEFAULT_QUESTIONS_PAGE_SIZE)
 
     qs, meta_data = models.Thread.objects.run_advanced_search(request_user=request.user, 
                                                               language_code=language_code,
                                                               site=site,
-                                                              search_state=search_state)
+                                                              search_state=search_state,
+                                                              thread_ids=thread_ids)
+    
+    
 
     if meta_data['non_existing_tags']:
         search_state = search_state.remove_tags(meta_data['non_existing_tags'])
@@ -227,7 +247,15 @@ def questions(request, **kwargs):
             'feed_url': context_feed_url,
         }
 
-        return render_into_skin('main_page.html', template_data, request)
+        if extra_context:
+            template_data .update(extra_context)
+    
+        if not jinja2_rendering :
+            return render_to_response(template_name,
+                                      dictionary=template_data,
+                                      context_instance=RequestContext(request))
+        
+        return render_into_skin(template_name, template_data, request)
 
 
 def tags(request):#view showing a listing of available tags - plain list
@@ -570,10 +598,12 @@ def question(request, id,
         'page_class': 'question-page',
         'active_tab': 'questions',
         'question' : question_post,
+        'edit_question_url' : reverse('edit_question', args=[question_post.id]),
         'thread': thread,
         'answer' : answer_form,
         'answers' : page_objects.object_list,
         'answer_count': len(answers),
+        'form_answer_url' : reverse('answer', args=[question_post.id]) ,
         'user_votes': user_votes,
         'user_post_id_list': user_post_id_list,
         'user_can_post_comment': user_can_post_comment,#in general

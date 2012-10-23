@@ -160,12 +160,13 @@ class ThreadManager(models.Manager):
         )
 
 
-    def run_advanced_search(self, request_user, language_code, site, search_state):  # TODO: !! review, fix, and write tests for this
+    def run_advanced_search(self, request_user, language_code, site, search_state, thread_ids=None):  # TODO: !! review, fix, and write tests for this
         """
         all parameters are guaranteed to be clean
         however may not relate to database - in that case
         a relvant filter will be silently dropped
 
+        @atiberghien: thread_ids allows to run search on pre-selected threads
         """
         from askbot.conf import settings as askbot_settings # Avoid circular import
 
@@ -178,6 +179,9 @@ class ThreadManager(models.Manager):
                 posts__deleted=False,
             ) # (***) brings `askbot_post` into the SQL query, see the ordering section below
 
+        if thread_ids:
+            qs = qs.filter(id__in=thread_ids)
+            
         if askbot_settings.ENABLE_CONTENT_MODERATION:
             qs = qs.filter(approved = True)
 
