@@ -87,7 +87,7 @@ class SearchState(object):
     def get_empty(cls):
         return cls(scope=None, sort=None, query=None, tags=None, author=None, page=None, user_logged_in=None)
 
-    def __init__(self, scope, sort, query, tags, author, page, user_logged_in):
+    def __init__(self, scope, sort, query, tags, author, page, user_logged_in, questions_url=None, ask_url=None):
         # INFO: zip(*[('a', 1), ('b', 2)])[0] == ('a', 'b')
 
         if (scope not in zip(*const.POST_SCOPE_LIST)[0]) or (scope == 'favorite' and not user_logged_in):
@@ -129,7 +129,8 @@ class SearchState(object):
         if self.page == 0:  # in case someone likes jokes :)
             self.page = 1
 
-        self._questions_url = urlresolvers.reverse('questions')
+        self._questions_url = questions_url or urlresolvers.reverse('questions')
+        self._ask_url = ask_url or urlresolvers.reverse('ask')
 
     def __str__(self):
         return self.query_string()
@@ -145,7 +146,7 @@ class SearchState(object):
         return '?' + urlencode({'title': ask_title})
 
     def full_ask_url(self):
-        return urlresolvers.reverse('ask') + self.ask_query_string()
+        return self._ask_url + self.ask_query_string()
 
     def unified_tags(self):
         "Returns tags both from tag selector and extracted from query"

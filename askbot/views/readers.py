@@ -77,11 +77,13 @@ def questions(request,
               query=None, 
               tags=None, 
               author=None, 
-              page=None):
+              page=None,
+              questions_url=None,
+              ask_url=None):
     """
     List of Questions, Tagged questions, and Unanswered questions.
     matching search query or user selection
-    """
+    """  
     language_code = translation.get_language()
     
     site = Site.objects.get_current()
@@ -96,7 +98,9 @@ def questions(request,
                                query=query, 
                                tags=tags, 
                                author=author,
-                               page=page)
+                               page=page,
+                               questions_url=questions_url,
+                               ask_url=ask_url)
     
     page_size = int(askbot_settings.DEFAULT_QUESTIONS_PAGE_SIZE)
 
