@@ -277,7 +277,7 @@ class ThreadManager(models.Manager):
             if profile.display_tag_filter_strategy == const.INCLUDE_INTERESTING and (interesting_tags or profile.has_interesting_wildcard_tags()):
                 #filter by interesting tags only
                 interesting_tag_filter = models.Q(tags__in=interesting_tags)
-                if profile.get_has_interesting_wildcard_tags():
+                if profile.has_interesting_wildcard_tags():
                     interesting_wildcards = profile.interesting_tags.split()
                     extra_interesting_tags = Tag.objects.get_by_wildcards(interesting_wildcards)
                     interesting_tag_filter |= models.Q(tags__in=extra_interesting_tags)
