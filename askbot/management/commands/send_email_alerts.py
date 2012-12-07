@@ -195,8 +195,8 @@ class Command(NoArgsCommand):
                     q_ans_B.cutoff_time = cutoff_time
 
                 elif feed.feed_type == 'q_all':
-                    q_all_A = user.get_tag_filtered_questions(Q_set_A)
-                    q_all_B = user.get_tag_filtered_questions(Q_set_B)
+                    q_all_A = user.get_profile().get_tag_filtered_questions(Q_set_A)
+                    q_all_B = user.get_profile().get_tag_filtered_questions(Q_set_B)
 
                     q_all_A = q_all_A[:askbot_settings.MAX_ALERTS_PER_EMAIL]
                     q_all_B = q_all_B[:askbot_settings.MAX_ALERTS_PER_EMAIL]
@@ -266,7 +266,7 @@ class Command(NoArgsCommand):
         except EmailFeedSetting.DoesNotExist:
             pass
 
-        if user.email_tag_filter_strategy == const.INCLUDE_INTERESTING:
+        if user.get_profile().email_tag_filter_strategy == const.INCLUDE_INTERESTING:
             extend_question_list(q_all_A, q_list)
             extend_question_list(q_all_B, q_list)
 
@@ -276,7 +276,7 @@ class Command(NoArgsCommand):
         extend_question_list(q_ans_A, q_list, limit=True)
         extend_question_list(q_ans_B, q_list, limit=True)
 
-        if user.email_tag_filter_strategy == const.EXCLUDE_IGNORED:
+        if user.get_profile().email_tag_filter_strategy == const.EXCLUDE_IGNORED:
             extend_question_list(q_all_A, q_list, limit=True)
             extend_question_list(q_all_B, q_list, limit=True)
 
@@ -386,10 +386,9 @@ class Command(NoArgsCommand):
         #does not change the database, only sends the email
         #todo: move this to template
         for profile in get_profile_model().objects.all():
-            user = profile.user
-            user.add_missing_askbot_subscriptions()
+            profile.add_missing_askbot_subscriptions()
             #todo: q_list is a dictionary, not a list
-            q_list = self.get_updated_questions_for_user(user)
+            q_list = self.get_updated_questions_for_user(profile.user)
             if len(q_list.keys()) == 0:
                 continue
             num_q = 0
@@ -425,7 +424,7 @@ class Command(NoArgsCommand):
                     num_q
                 ) % {
                     'num':num_q,
-                    'name':user.username,
+                    'name':profile.user.username,
                     'sitename': askbot_settings.APP_SHORT_NAME
                 }
 
@@ -461,8 +460,8 @@ class Command(NoArgsCommand):
                 link = url_prefix + reverse(
                                         'user_subscriptions', 
                                         kwargs = {
-                                            'id': user.id,
-                                            'slug': slugify(user.username)
+                                            'id': profile.user.id,
+                                            'slug': slugify(profile.user.username)
                                         }
                                     )
 
@@ -480,7 +479,7 @@ class Command(NoArgsCommand):
                 if DEBUG_THIS_COMMAND == True:
                     recipient_email = django_settings.ADMINS[0][1]
                 else:
-                    recipient_email = user.email
+                    recipient_email = profile.user.email
 
                 mail.send_mail(
                     subject_line = subject_line,

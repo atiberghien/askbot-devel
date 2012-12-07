@@ -147,7 +147,7 @@ class Command(BaseCommand):
             subscribed_lines = get_tag_lines(subscribed_tags, width = 25)
 
             follow = '*'
-            if user.email_tag_filter_strategy == const.INCLUDE_INTERESTING:
+            if user.get_profile().email_tag_filter_strategy == const.INCLUDE_INTERESTING:
                 follow = ''
             user_string = '%s (%d)%s' % (user.username, user.id, follow)
             output_lines = format_table_row(

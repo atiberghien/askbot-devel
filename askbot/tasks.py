@@ -208,9 +208,9 @@ def record_post_update(
     #todo: fix this temporary spam protection plug
     if created:
         if not (updated_by.get_profile().is_administrator() or updated_by.get_profile().is_moderator()):
-            if updated_by.reputation < 15:
-                notification_subscribers = \
-                    [u for u in notification_subscribers if u.get_profile().is_administrator()]
+            if updated_by.get_profile().reputation < 15:
+                notification_subscribers = [u for u in notification_subscribers if u.get_profile().is_administrator()]
+                
     send_instant_notifications_about_activity_in_post(
                             update_activity = update_activity,
                             post = post,
@@ -242,7 +242,7 @@ def record_question_visit(
     #user = User.objects.get(id = user_id)
     if user.is_authenticated():
         #get response notifications
-        user.visit_question(question_post)
+        user.get_profile().visit_question(question_post)
 
     #3) send award badges signal for any badges
     #that are awarded for question views

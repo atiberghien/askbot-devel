@@ -41,7 +41,7 @@ class Command(NoArgsCommand):
         #format the email reminder and send it
         for user in models.User.objects.exclude(status = 'b'):
             user_questions = questions.exclude(author = user)
-            user_questions = user.get_tag_filtered_questions(user_questions)
+            user_questions = user.get_profile().get_tag_filtered_questions(user_questions)
 
             if askbot_settings.GROUPS_ENABLED:
                 user_groups = user.get_groups()

@@ -1057,23 +1057,23 @@ class Post(models.Model):
     def passes_tag_filter_for_user(self, user):
 
         question = self.get_origin_post()
-        if user.email_tag_filter_strategy == const.INCLUDE_INTERESTING:
+        if user.get_profile().email_tag_filter_strategy == const.INCLUDE_INTERESTING:
             #at least some of the tags must be marked interesting
-            return user.has_affinity_to_question(
+            return user.get_profile().has_affinity_to_question(
                 question,
                 affinity_type = 'like'
             )
-        elif user.email_tag_filter_strategy == const.EXCLUDE_IGNORED:
-            return not user.has_affinity_to_question(
+        elif user.get_profile().email_tag_filter_strategy == const.EXCLUDE_IGNORED:
+            return not user.get_profile().has_affinity_to_question(
                 question,
                 affinity_type = 'dislike'
             )
-        elif user.email_tag_filter_strategy == const.INCLUDE_ALL:
+        elif user.get_profile().email_tag_filter_strategy == const.INCLUDE_ALL:
             return True
         else:
             raise ValueError(
                 'unexpected User.email_tag_filter_strategy %s'\
-                % user.email_tag_filter_strategy
+                % user.get_profile().email_tag_filter_strategy
             )
 
     def post_get_last_update_info(self):#todo: rename this subroutine
