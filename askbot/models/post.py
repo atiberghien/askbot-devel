@@ -1308,6 +1308,9 @@ class Post(models.Model):
 
     def get_tag_names(self):
         return self.thread.get_tag_names()
+    
+    def get_title(self):
+        return self.thread.get_title(self)
 
     def __apply_edit(
                     self,
