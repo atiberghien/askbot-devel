@@ -26,8 +26,6 @@ from askbot.deps.livesettings import SortedDotDict, config_register
 from askbot.deps.livesettings.functions import config_get
 from askbot.deps.livesettings import signals
 
-cache = get_cache("askbot")
-
 class ConfigSettings(object):
     """A very simple Singleton wrapper for settings
     a limitation is that all settings names using this class
@@ -69,7 +67,7 @@ class ConfigSettings(object):
             setting = Setting.objects.get(key=key)
             setting.value = value
             setting.save()
-        #self.prime_cache()
+        self.prime_cache()
 
     def register(self, value):
         """registers the setting
@@ -92,12 +90,12 @@ class ConfigSettings(object):
             self.__group_map[key] = group_key
 
     def as_dict(self):
-        settings = cache.get('askbot-livesettings')
+        settings = get_cache("askbot").get('askbot-livesettings')
         if settings:
             return settings
         else:
             self.prime_cache()
-            return cache.get('askbot-livesettings')
+            return get_cache("askbot").get('askbot-livesettings')
 
     @classmethod
     def prime_cache(cls, **kwargs):
@@ -107,9 +105,10 @@ class ConfigSettings(object):
         for key in cls.__instance.keys():
             #todo: this is odd that I could not use self.__instance.items() mapping here
             out[key] = cls.__instance[key].value
-        cache.set('askbot-livesettings', out)
+        get_cache("askbot").set('askbot-livesettings', out)
 
 
 signals.configuration_value_changed.connect(ConfigSettings.prime_cache)
 #settings instance to be used elsewhere in the project
 settings = ConfigSettings()
+
