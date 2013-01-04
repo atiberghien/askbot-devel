@@ -1707,7 +1707,7 @@ class PostRevision(models.Model):
         """``True`` if post needs moderation"""
         if askbot_settings.ENABLE_CONTENT_MODERATION:
             #todo: needs a lot of details
-            if self.author.is_administrator_or_moderator():
+            if self.author.get_profile().is_administrator_or_moderator():
                 return False
             if self.approved:
                 return False

@@ -842,7 +842,7 @@ def user_profile(request, id, slug=None, tab_name=None, content_only=False):
     else:
         if request.user.is_anonymous():
             can_show_karma = False
-        elif request.user.is_administrator_or_moderator():
+        elif request.user.get_profile().is_administrator_or_moderator():
             can_show_karma = True
         elif request.user == profile_owner:
             can_show_karma = True
@@ -906,7 +906,7 @@ def groups(request, id = None, slug = None):
 
     groups = groups.select_related('group_profile')
 
-    user_can_add_groups = user.is_authenticated() and user.is_administrator_or_moderator()
+    user_can_add_groups = user.is_authenticated() and user.get_profile().is_administrator_or_moderator()
 
     groups_membership_info = collections.defaultdict()
     if user.is_authenticated():
