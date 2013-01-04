@@ -318,11 +318,8 @@ class ThreadManager(models.Manager):
         # UPDATE: Apparently we don't need distinct, the query don't duplicate Thread rows!
         # qs = qs.extra(select={'ordering_key': orderby.lstrip('-')}, order_by=['-ordering_key' if orderby.startswith('-') else 'ordering_key'])
         # qs = qs.distinct()
-
-        qs = qs.only('id', 'title', 'view_count', 'answer_count', 'last_activity_at', 'last_activity_by', 'closed', 'tagnames', 'accepted_answer')
-
-        #print qs.query
-
+        #qs = qs.only('id', 'title', 'view_count', 'answer_count', 'last_activity_at', 'last_activity_by', 'closed', 'tagnames', 'accepted_answer')
+        
         return qs.distinct(), meta_data
 
     def precache_view_data_hack(self, threads):
