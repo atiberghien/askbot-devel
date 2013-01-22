@@ -38,6 +38,8 @@ from askbot.templatetags import extra_filters_jinja as template_filters
 from askbot.importers.stackexchange import management as stackexchange#todo: may change
 from django.contrib.sites.models import Site
 from django.contrib import messages
+from django.template.loader import render_to_string
+from django.template.context import RequestContext
 
 # used in index page
 INDEX_PAGE_SIZE = 20
@@ -591,6 +593,8 @@ def post_comments(request):#generic ajax handler to load comments to an object
     # only support get post comments by ajax now
 
     post_type = request.REQUEST.get('post_type', '')
+    template_name = request.REQUEST.get('template_name', '')
+    
     if not request.is_ajax() or post_type not in ('question', 'answer'):
         raise Http404  # TODO: Shouldn't be 404! More like 400, 403 or sth more specific
 
@@ -609,8 +613,14 @@ def post_comments(request):#generic ajax handler to load comments to an object
                         '<a href="%(sign_in_url)s">sign in</a>.') % \
                         {'sign_in_url': url_utils.get_login_url()}
                 raise exceptions.PermissionDenied(msg)
-            user.get_profile().post_comment(parent_post=obj, body_text=request.POST.get('comment'))
-            response = __generate_comments_json(obj, user)
+            comment = user.get_profile().post_comment(parent_post=obj, body_text=request.POST.get('comment'))
+            if template_name:
+                response = HttpResponse(render_to_string(template_name, 
+                                             dictionary={'comment' : comment}, 
+                                             context_instance=RequestContext(request)),
+                                        status=200)
+            else:
+                response = __generate_comments_json(obj, user)
         except exceptions.PermissionDenied, e:
             response = HttpResponseForbidden(unicode(e), mimetype="application/json")
 
