@@ -252,7 +252,7 @@ def questions(request,
         }
 
         if extra_context:
-            template_data .update(extra_context)
+            template_data.update(extra_context)
     
         if not jinja2_rendering :
             return render_to_response(template_name,
