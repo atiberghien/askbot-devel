@@ -180,7 +180,9 @@ class ThreadManager(models.Manager):
             ) # (***) brings `askbot_post` into the SQL query, see the ordering section below
 
         if thread_ids:
-            qs = qs.filter(id__in=thread_ids)
+            qs = qs.filter(id__in=thread_ids, is_specific=True)
+        else:
+            qs = qs.exclude(is_specific=True)
             
         if askbot_settings.ENABLE_CONTENT_MODERATION:
             qs = qs.filter(approved = True)
@@ -420,6 +422,8 @@ class Thread(models.Model):
     added_at = models.DateTimeField(default = datetime.datetime.now)
 
     score = models.IntegerField(default = 0)
+    
+    is_specific = models.BooleanField(default=False)
 
     objects = ThreadManager()
     
