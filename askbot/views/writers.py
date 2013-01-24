@@ -633,10 +633,12 @@ def edit_comment(request):
     if request.user.is_anonymous():
         raise exceptions.PermissionDenied(_('Sorry, anonymous users cannot edit comments'))
 
-    comment_id = int(request.POST['comment_id'])
+    comment_id = int(request.POST.get('comment_id', 
+                     request.POST.get('id')))
     comment_post = models.Post.objects.get(post_type='comment', id=comment_id)
 
-    request.user.get_profile().edit_comment(comment_post=comment_post, body_text = request.POST['comment'])
+    request.user.get_profile().edit_comment(comment_post=comment_post, body_text = request.POST.get('comment',
+                                                                                   request.POST.get('value')))
 
     is_deletable = template_filters.can_delete_comment(comment_post.author, comment_post)
     is_editable = template_filters.can_edit_comment(comment_post.author, comment_post)
@@ -647,6 +649,7 @@ def edit_comment(request):
         'object_id': comment_post.parent.id,
         'comment_added_at': str(comment_post.added_at.replace(microsecond = 0)) + tz,
         'html': comment_post.html,
+        'text' : comment_post.text,
         'user_display_name': comment_post.author.username,
         'user_url': comment_post.author.get_profile().get_absolute_url(),
         'user_id': comment_post.author.id,
