@@ -179,7 +179,7 @@ class ThreadManager(models.Manager):
                 posts__deleted=False,
             ) # (***) brings `askbot_post` into the SQL query, see the ordering section below
 
-        if thread_ids:
+        if thread_ids != None:
             qs = qs.filter(id__in=thread_ids, is_specific=True)
         else:
             qs = qs.exclude(is_specific=True)
