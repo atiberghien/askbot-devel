@@ -159,6 +159,11 @@ urlpatterns = patterns('',
         views.readers.get_comment, 
         name='get_comment'
     ),
+    url(#ajax only
+        r'^rev/$',
+        views.readers.get_revision, 
+        name='get_revision'
+    ),
     url(
         r'^%s$' % _('tags/'), 
         views.readers.tags, 

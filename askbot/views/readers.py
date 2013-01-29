@@ -670,6 +670,18 @@ def get_comment(request):
     request.user.get_profile().assert_can_edit_comment(comment)
     return {'text': comment.text}
 
+@csrf.csrf_exempt
+@ajax_only
+@anonymous_forbidden
+@get_only
+def get_revision(request):
+    """return the raw content of a post """
+    rev_id = int(request.GET['rev_id'])
+    post_id = int(request.GET['post_id'])
+    rev = models.PostRevision.objects.get(revision=rev_id, 
+                                          post__id=post_id)
+    return {'text' : rev.text }
+
 def widget_questions(request):
     """Returns the first x questions based on certain tags.
     @returns template with those questions listed."""
