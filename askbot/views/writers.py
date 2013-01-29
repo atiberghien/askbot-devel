@@ -13,7 +13,7 @@ import sys
 import tempfile
 import time
 import urlparse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render_to_response
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect, HttpResponse, HttpResponseForbidden, Http404
@@ -432,7 +432,12 @@ def edit_question(request, id):
 @login_required
 @csrf.csrf_protect
 @decorators.check_spam('text')
-def edit_answer(request, id):
+def edit_answer(request, 
+                id,
+                jinja2_rendering=True,
+                template_name='answer_edit.html',
+                extra_context=None,
+                ):
     answer = get_object_or_404(models.Post, id=id)
     latest_revision = answer.get_latest_revision()
     try:
@@ -474,7 +479,9 @@ def edit_answer(request, id):
                                 wiki = form.cleaned_data.get('wiki', answer.wiki),
                                 #todo: add wiki field to form
                             )
-                    return HttpResponseRedirect(answer.get_absolute_url())
+                    
+                    redirect_to = request.POST.get('next', answer.get_absolute_url())
+                    return HttpResponseRedirect(redirect_to)
         else:
             revision_form = forms.RevisionForm(answer, latest_revision)
             form = forms.EditAnswerForm(answer, latest_revision)
@@ -485,7 +492,16 @@ def edit_answer(request, id):
             'revision_form': revision_form,
             'form': form,
         }
-        return render_into_skin('answer_edit.html', data, request)
+        
+        if extra_context:
+            data.update(extra_context)
+        
+        if jinja2_rendering:
+            return render_into_skin(template_name, data, request)
+        else:
+            return render_to_response(template_name,
+                                      data,
+                                      context_instance=RequestContext(request))
 
     except exceptions.PermissionDenied, e:
         messages.error(request, unicode(e))
