@@ -47,6 +47,7 @@ from askbot.models import Post, Vote
 from django.contrib import messages
 from askbot.utils.functions import get_tag_font_size
 from django.template.context import RequestContext
+from django.views.generic.base import TemplateView
 
 INDEX_PAGE_SIZE = 30
 INDEX_AWARD_SIZE = 15
@@ -67,199 +68,190 @@ def index(request):#generates front page - shows listing of questions sorted in 
     """
     return HttpResponseRedirect(reverse('questions'))
 
-def questions(request, 
-              template_name="main_page.html", 
-              thread_ids=None,
-              jinja2_rendering=True,
-              extra_context=None,
-              scope=None, 
-              sort=None, 
-              query=None, 
-              tags=None, 
-              author=None, 
-              page=None,
-              questions_url=None,
-              ask_url=None):
+class QuestionsView(TemplateView):
     """
     List of Questions, Tagged questions, and Unanswered questions.
     matching search query or user selection
-    """  
-    language_code = translation.get_language()
-    
-    site = Site.objects.get_current()
-    
-    #before = datetime.datetime.now()
-    if request.method != 'GET':
-        return HttpResponseNotAllowed(['GET'])
+    """ 
+    template_name="main_page.html"
+    is_specific=False
+    jinja2_rendering=True
+    questions_url=None
+    ask_url=None
+    thread_ids = None
 
-    search_state = SearchState(user_logged_in=request.user.is_authenticated(),
-                               scope=scope, 
-                               sort=sort, 
-                               query=query, 
-                               tags=tags, 
-                               author=author,
-                               page=page,
-                               questions_url=questions_url,
-                               ask_url=ask_url)
-    
-    page_size = int(askbot_settings.DEFAULT_QUESTIONS_PAGE_SIZE)
-
-    qs, meta_data = models.Thread.objects.run_advanced_search(request_user=request.user, 
-                                                              language_code=language_code,
-                                                              site=site,
-                                                              search_state=search_state,
-                                                              thread_ids=thread_ids)
-    
-    
-
-    if meta_data['non_existing_tags']:
-        search_state = search_state.remove_tags(meta_data['non_existing_tags'])
-
-    paginator = Paginator(qs, page_size)
-    if paginator.num_pages < search_state.page:
-        search_state.page = 1
-    page = paginator.page(search_state.page)
-
-    page.object_list = list(page.object_list) # evaluate queryset
-
-    # INFO: Because for the time being we need question posts and thread authors
-    #       down the pipeline, we have to precache them in thread objects
-    
-    #FIXME@atiberghien : reactive or replace it
-    #models.Thread.objects.precache_view_data_hack(threads=page.object_list)
-
-    related_tags = Tag.objects.get_related_to_search(threads=page.object_list, ignored_tag_names=meta_data.get('ignored_tag_names', []))
-    tag_list_type = askbot_settings.TAG_LIST_FORMAT
-    if tag_list_type == 'cloud': #force cloud to sort by name
-        related_tags = sorted(related_tags, key = operator.attrgetter('name'))
-
-    contributors = list(models.Thread.objects.get_thread_contributors(thread_list=page.object_list).only('user__id', 'user__username', 'mugshot'))
-
-    paginator_context = {
-        'is_paginated' : (paginator.count > page_size),
-
-        'pages': paginator.num_pages,
-        'page': search_state.page,
-        'has_previous': page.has_previous(),
-        'has_next': page.has_next(),
-        'previous': page.previous_page_number(),
-        'next': page.next_page_number(),
-
-        'base_url' : search_state.query_string(),
-        'page_size' : page_size,
-    }
-
-    # We need to pass the rss feed url based
-    # on the search state to the template.
-    # We use QueryDict to get a querystring
-    # from dicts and arrays. Much cleaner
-    # than parsing and string formating.
-    rss_query_dict = QueryDict("").copy()
-    if search_state.query:
-        # We have search string in session - pass it to
-        # the QueryDict
-        rss_query_dict.update({"q": search_state.query})
-    if search_state.tags:
-        # We have tags in session - pass it to the
-        # QueryDict but as a list - we want tags+
-        rss_query_dict.setlist("tags", search_state.tags)
+    def render_to_response(self, context, **response_kwargs):
+        if self.request.is_ajax():
+            return HttpResponse(simplejson.dumps(context), 
+                                mimetype = 'application/json')
+            
+        if not self.jinja2_rendering :
+            return TemplateView.render_to_response(self, context)
         
-    context_feed_url = reverse('latest_questions_feed')
-    feed_url_params = rss_query_dict.urlencode()
-    if feed_url_params :
-        context_feed_url = '/%s?%s' % (context_feed_url, feed_url_params) # Format the url with the QueryDict
+        print self.template_name
+        return render_into_skin(self.template_name, 
+                                context, 
+                                self.request)
     
-    reset_method_count = len(filter(None, [search_state.query, search_state.tags, meta_data.get('author_name', None)]))
-
-    if request.is_ajax():
-        q_count = paginator.count
-
-        question_counter = ungettext('%(q_num)s question', '%(q_num)s questions', q_count)
-        question_counter = question_counter % {'q_num': humanize.intcomma(q_count),}
-
-        if q_count > page_size:
-            paginator_tpl = get_template('main_page/paginator.html', request)
-            paginator_html = paginator_tpl.render(Context({
-                'context': functions.setup_paginator(paginator_context),
-                'questions_count': q_count,
-                'page_size' : page_size,
-                'search_state': search_state,
-            }))
-        else:
-            paginator_html = ''
-
-        questions_tpl = get_template('main_page/questions_loop.html', request)
-        questions_html = questions_tpl.render(Context({
-            'threads': page,
-            'search_state': search_state,
-            'reset_method_count': reset_method_count,
-        }))
-
-        ajax_data = {
-            'query_data': {
-                'tags': search_state.tags,
-                'sort_order': search_state.sort,
-                'ask_query_string': search_state.ask_query_string(),
-            },
-            'paginator': paginator_html,
-            'question_counter': question_counter,
-            'faces': [],
-            'feed_url': context_feed_url,
-            'query_string': search_state.query_string(),
+    def get_context_data(self, **kwargs):
+        context = TemplateView.get_context_data(self, **kwargs)
+        
+        self.language_code = translation.get_language()
+        self.site = Site.objects.get_current()
+        
+        search_state = SearchState(user_logged_in=self.request.user.is_authenticated(),
+                                   scope=kwargs["scope"], 
+                                   sort=kwargs["sort"], 
+                                   query=kwargs["query"], 
+                                   tags=kwargs["tags"], 
+                                   author=kwargs["author"],
+                                   page=kwargs["page"],
+                                   questions_url=self.questions_url,
+                                   ask_url=self.ask_url)
+        
+        page_size = int(askbot_settings.DEFAULT_QUESTIONS_PAGE_SIZE)
+    
+        qs, meta_data = models.Thread.objects.run_advanced_search(request_user=self.request.user, 
+                                                                  language_code=self.language_code,
+                                                                  site=self.site,
+                                                                  search_state=search_state,
+                                                                  thread_ids=self.thread_ids,
+                                                                  is_specific=self.is_specific)
+        
+        if meta_data['non_existing_tags']:
+            search_state = search_state.remove_tags(meta_data['non_existing_tags'])
+    
+        paginator = Paginator(qs, page_size)
+        if paginator.num_pages < search_state.page:
+            search_state.page = 1
+        page = paginator.page(search_state.page)
+    
+        page.object_list = list(page.object_list) # evaluate queryset
+    
+        # INFO: Because for the time being we need question posts and thread authors
+        #       down the pipeline, we have to precache them in thread objects
+        
+        #FIXME@atiberghien : reactive or replace it
+        #models.Thread.objects.precache_view_data_hack(threads=page.object_list)
+    
+        related_tags = Tag.objects.get_related_to_search(threads=page.object_list, ignored_tag_names=meta_data.get('ignored_tag_names', []))
+        tag_list_type = askbot_settings.TAG_LIST_FORMAT
+        if tag_list_type == 'cloud': #force cloud to sort by name
+            related_tags = sorted(related_tags, key = operator.attrgetter('name'))
+    
+        contributors = list(models.Thread.objects.get_thread_contributors(thread_list=page.object_list).only('user__id', 'user__username', 'mugshot'))
+    
+        paginator_context = {
+            'is_paginated' : (paginator.count > page_size),
+    
+            'pages': paginator.num_pages,
+            'page': search_state.page,
+            'has_previous': page.has_previous(),
+            'has_next': page.has_next(),
+            'previous': page.previous_page_number(),
+            'next': page.next_page_number(),
+    
+            'base_url' : search_state.query_string(),
             'page_size' : page_size,
-            'questions': questions_html.replace('\n',''),
-            'non_existing_tags': meta_data['non_existing_tags']
         }
-        ajax_data['related_tags'] = [{
-            'name': escape(tag.name),
-            'used_count': humanize.intcomma(tag.local_used_count)
-        } for tag in related_tags]
-
-        return HttpResponse(simplejson.dumps(ajax_data), mimetype = 'application/json')
-
-    else: # non-AJAX branch
-
-        template_data = {
-            'active_tab': 'questions',
-            'author_name' : meta_data.get('author_name',None),
-            'contributors' : contributors,
-            'context' : paginator_context,
-            'is_unanswered' : False,#remove this from template
-            'interesting_tag_names': meta_data.get('interesting_tag_names', None),
-            'ignored_tag_names': meta_data.get('ignored_tag_names', None),
-            'subscribed_tag_names': meta_data.get('subscribed_tag_names', None),
-            'language_code': translation.get_language(),
-            'name_of_anonymous_user' : models.profile.get_name_of_anonymous_user(),
-            'page_class': 'main-page',
-            'page_size': page_size,
-            'query': search_state.query,
-            'threads' : page,
-            'questions_count' : paginator.count,
-            'reset_method_count': reset_method_count,
-            'scope': search_state.scope,
-            'show_sort_by_relevance': askbot.conf.should_show_sort_by_relevance(),
-            'search_tags' : search_state.tags,
-            'sort': search_state.sort,
-            'tab_id' : search_state.sort,
-            'tags' : related_tags,
-            'tag_list_type' : tag_list_type,
-            'font_size' : get_tag_font_size(related_tags),
-            'display_tag_filter_strategy_choices': const.TAG_DISPLAY_FILTER_STRATEGY_CHOICES,
-            'email_tag_filter_strategy_choices': const.TAG_EMAIL_FILTER_STRATEGY_CHOICES,
-            'query_string': search_state.query_string(),
-            'search_state': search_state,
-            'feed_url': context_feed_url,
-        }
-
-        if extra_context:
-            template_data.update(extra_context)
     
-        if not jinja2_rendering :
-            return render_to_response(template_name,
-                                      dictionary=template_data,
-                                      context_instance=RequestContext(request))
+        # We need to pass the rss feed url based
+        # on the search state to the template.
+        # We use QueryDict to get a querystring
+        # from dicts and arrays. Much cleaner
+        # than parsing and string formating.
+        rss_query_dict = QueryDict("").copy()
+        if search_state.query:
+            # We have search string in session - pass it to
+            # the QueryDict
+            rss_query_dict.update({"q": search_state.query})
+        if search_state.tags:
+            # We have tags in session - pass it to the
+            # QueryDict but as a list - we want tags+
+            rss_query_dict.setlist("tags", search_state.tags)
+            
+        context_feed_url = reverse('latest_questions_feed')
+        feed_url_params = rss_query_dict.urlencode()
+        if feed_url_params :
+            context_feed_url = '/%s?%s' % (context_feed_url, feed_url_params) # Format the url with the QueryDict
         
-        return render_into_skin(template_name, template_data, request)
+        reset_method_count = len(filter(None, [search_state.query, search_state.tags, meta_data.get('author_name', None)]))
+        
+        if self.request.is_ajax():
+            q_count = paginator.count
+    
+            question_counter = ungettext('%(q_num)s question', '%(q_num)s questions', q_count)
+            question_counter = question_counter % {'q_num': humanize.intcomma(q_count),}
+    
+            if q_count > page_size:
+                paginator_tpl = get_template('main_page/paginator.html', self.request)
+                paginator_html = paginator_tpl.render(Context({
+                    'context': functions.setup_paginator(paginator_context),
+                    'questions_count': q_count,
+                    'page_size' : page_size,
+                    'search_state': search_state,
+                }))
+            else:
+                paginator_html = ''
+    
+            questions_tpl = get_template('main_page/questions_loop.html', self.request)
+            questions_html = questions_tpl.render(Context({
+                'threads': page,
+                'search_state': search_state,
+                'reset_method_count': reset_method_count,
+            }))
+    
+            context.update({
+                'query_data': {
+                    'tags': search_state.tags,
+                    'sort_order': search_state.sort,
+                    'ask_query_string': search_state.ask_query_string(),
+                },
+                'paginator': paginator_html,
+                'question_counter': question_counter,
+                'faces': [],
+                'feed_url': context_feed_url,
+                'query_string': search_state.query_string(),
+                'page_size' : page_size,
+                'questions': questions_html.replace('\n',''),
+                'non_existing_tags': meta_data['non_existing_tags'],
+                'related_tags' : [{'name': escape(tag.name),
+                                    'used_count': humanize.intcomma(tag.local_used_count)} 
+                                   for tag in related_tags]
+            })
+        else:
+            context.update({
+                    'active_tab': 'questions',
+                    'author_name' : meta_data.get('author_name',None),
+                    'contributors' : contributors,
+                    'context' : paginator_context,
+                    'is_unanswered' : False,#remove this from template
+                    'interesting_tag_names': meta_data.get('interesting_tag_names', None),
+                    'ignored_tag_names': meta_data.get('ignored_tag_names', None),
+                    'subscribed_tag_names': meta_data.get('subscribed_tag_names', None),
+                    'language_code': translation.get_language(),
+                    'name_of_anonymous_user' : models.profile.get_name_of_anonymous_user(),
+                    'page_class': 'main-page',
+                    'page_size': page_size,
+                    'query': search_state.query,
+                    'threads' : page,
+                    'questions_count' : paginator.count,
+                    'reset_method_count': reset_method_count,
+                    'scope': search_state.scope,
+                    'show_sort_by_relevance': askbot.conf.should_show_sort_by_relevance(),
+                    'search_tags' : search_state.tags,
+                    'sort': search_state.sort,
+                    'tab_id' : search_state.sort,
+                    'tags' : related_tags,
+                    'tag_list_type' : tag_list_type,
+                    'font_size' : get_tag_font_size(related_tags),
+                    'display_tag_filter_strategy_choices': const.TAG_DISPLAY_FILTER_STRATEGY_CHOICES,
+                    'email_tag_filter_strategy_choices': const.TAG_EMAIL_FILTER_STRATEGY_CHOICES,
+                    'query_string': search_state.query_string(),
+                    'search_state': search_state,
+                    'feed_url': context_feed_url,
+                })
+        return context
 
 
 def tags(request):#view showing a listing of available tags - plain list
