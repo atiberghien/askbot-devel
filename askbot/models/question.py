@@ -160,7 +160,13 @@ class ThreadManager(models.Manager):
         )
 
 
-    def run_advanced_search(self, request_user, language_code, site, search_state, thread_ids=None):  # TODO: !! review, fix, and write tests for this
+    def run_advanced_search(self, 
+                            request_user, 
+                            language_code, 
+                            site, 
+                            search_state, 
+                            thread_ids=None,
+                            is_specific=False):  # TODO: !! review, fix, and write tests for this
         """
         all parameters are guaranteed to be clean
         however may not relate to database - in that case
@@ -177,12 +183,11 @@ class ThreadManager(models.Manager):
                 site=site,
                 posts__post_type='question', 
                 posts__deleted=False,
+                is_specific=is_specific
             ) # (***) brings `askbot_post` into the SQL query, see the ordering section below
 
         if thread_ids != None:
-            qs = qs.filter(id__in=thread_ids, is_specific=True)
-        else:
-            qs = qs.exclude(is_specific=True)
+            qs = qs.filter(id__in=thread_ids)
             
         if askbot_settings.ENABLE_CONTENT_MODERATION:
             qs = qs.filter(approved = True)
