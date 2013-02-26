@@ -10,6 +10,14 @@ exactly match name of the model used in the project
 from django.contrib import admin
 from askbot import models
 
+class EmailFeedSettingAdmin(admin.ModelAdmin):
+    list_display = ('subscriber', 'feed_type', 'frequency', 'added_at', 'reported_at')
+    list_editable = ('feed_type', 'frequency')
+    list_filter = ('feed_type', 'frequency')
+    ordering = ['subscriber']
+    search_fields = ['subscriber__username']
+    
+
 class AnonymousQuestionAdmin(admin.ModelAdmin):
     """AnonymousQuestion admin class"""
 
@@ -20,6 +28,7 @@ class VoteAdmin(admin.ModelAdmin):
     """  admin class"""
 
 class FavoriteQuestionAdmin(admin.ModelAdmin):
+    
     """  admin class"""
 
 class PostRevisionAdmin(admin.ModelAdmin):
@@ -43,3 +52,4 @@ admin.site.register(models.PostRevision, PostRevisionAdmin)
 admin.site.register(models.Award, AwardAdmin)
 admin.site.register(models.Repute, ReputeAdmin)
 admin.site.register(models.Activity, ActivityAdmin)
+admin.site.register(models.EmailFeedSetting, EmailFeedSettingAdmin)
