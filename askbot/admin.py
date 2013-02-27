@@ -12,7 +12,7 @@ from askbot import models
 
 class EmailFeedSettingAdmin(admin.ModelAdmin):
     list_display = ('subscriber', 'feed_type', 'frequency', 'added_at', 'reported_at')
-    list_editable = ('feed_type', 'frequency')
+    list_editable = ('frequency',)
     list_filter = ('feed_type', 'frequency')
     ordering = ['subscriber']
     search_fields = ['subscriber__username']
