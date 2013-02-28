@@ -14,6 +14,7 @@ from askbot import const
 from askbot import mail
 from askbot.utils.slug import slugify
 from userena.utils import get_profile_model
+from django.template.context import Context
 
 DEBUG_THIS_COMMAND = False
 
@@ -384,11 +385,11 @@ class Command(NoArgsCommand):
 
     def send_email_alerts(self):
         #does not change the database, only sends the email
-        #todo: move this to template
         for profile in get_profile_model().objects.all():
             profile.add_missing_askbot_subscriptions()
             #todo: q_list is a dictionary, not a list
             q_list = self.get_updated_questions_for_user(profile.user)
+            print q_list
             if len(q_list.keys()) == 0:
                 continue
             num_q = 0
@@ -414,23 +415,15 @@ class Command(NoArgsCommand):
                     'topics': tag_summary
                 }
 
-                #todo: send this to special log
-                #print 'have %d updated questions for %s' % (num_q, user.username)
-                text = ungettext(
-                    '<p>Dear %(name)s,</p><p>The following question has been updated '
-                    '%(sitename)s</p>',
-                    '<p>Dear %(name)s,</p><p>The following %(num)d questions have been '
-                    'updated on %(sitename)s:</p>',
-                    num_q
-                ) % {
+                context = {
                     'num':num_q,
                     'name':profile.user.username,
                     'sitename': askbot_settings.APP_SHORT_NAME
                 }
 
-                text += '<ul>'
                 items_added = 0
                 items_unreported = 0
+                context["action_list"] = ""
                 for q, meta_data in q_list.items():
                     act_list = []
                     if meta_data['skip']:
@@ -446,17 +439,9 @@ class Command(NoArgsCommand):
                         format_action_count('%(num)d ans', meta_data['new_ans'],act_list)
                         format_action_count('%(num)d ans rev',meta_data['ans_rev'],act_list)
                         act_token = ', '.join(act_list)
-                        text += '<li><a href="%s?sort=latest">%s</a> <font color="#777777">(%s)</font></li>' \
+                        context["action_list"] += '<li><a href="%s?sort=latest">%s</a> <font color="#777777">(%s)</font></li>' \
                                     % (url_prefix + q.get_absolute_url(), q.thread.title, act_token)
-                text += '</ul>'
-                text += '<p></p>'
-                #if len(q_list.keys()) >= askbot_settings.MAX_ALERTS_PER_EMAIL:
-                #    text += _('There may be more questions updated since '
-                #                'you have logged in last time as this list is '
-                #                'abridged for your convinience. Please visit '
-                #                'the askbot and see what\'s new!<br>'
-                #              )
-
+                 
                 link = url_prefix + reverse(
                                         'user_subscriptions', 
                                         kwargs = {
@@ -465,24 +450,22 @@ class Command(NoArgsCommand):
                                         }
                                     )
 
-                text += _(
-                    '<p>Please remember that you can always <a '
-                    'href="%(email_settings_link)s">adjust</a> frequency of the email updates or '
-                    'turn them off entirely.<br/>If you believe that this message was sent in an '
-                    'error, please email about it the forum administrator at %(admin_email)s.</'
-                    'p><p>Sincerely,</p><p>Your friendly %(sitename)s server.</p>'
-                ) % {
+                context.update({
                     'email_settings_link': link,
                     'admin_email': django_settings.ADMINS[0][1],
                     'sitename': askbot_settings.APP_SHORT_NAME
-                }
+                })
+                
                 if DEBUG_THIS_COMMAND == True:
                     recipient_email = django_settings.ADMINS[0][1]
                 else:
                     recipient_email = profile.user.email
 
+                from askbot.skins.loaders import get_template
+                template = get_template('digest_notification.html')
+                
                 mail.send_mail(
                     subject_line = subject_line,
-                    body_text = text,
+                    body_text = template.render(Context(context)),
                     recipient_list = [recipient_email]
                 )
