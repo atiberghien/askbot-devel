@@ -96,8 +96,8 @@ class QuestionsView(TemplateView):
     def get_context_data(self, **kwargs):
         context = TemplateView.get_context_data(self, **kwargs)
         
-        self.language_code = translation.get_language()
-        self.site = Site.objects.get_current()
+        language_code = translation.get_language()
+        site = Site.objects.get_current()
         
         search_state = SearchState(user_logged_in=self.request.user.is_authenticated(),
                                    scope=kwargs["scope"], 
@@ -112,8 +112,8 @@ class QuestionsView(TemplateView):
         page_size = int(askbot_settings.DEFAULT_QUESTIONS_PAGE_SIZE)
     
         qs, meta_data = models.Thread.objects.run_advanced_search(request_user=self.request.user, 
-                                                                  language_code=self.language_code,
-                                                                  site=self.site,
+                                                                  language_code=language_code,
+                                                                  site=site,
                                                                   search_state=search_state,
                                                                   thread_ids=self.thread_ids,
                                                                   is_specific=self.is_specific)
@@ -229,7 +229,7 @@ class QuestionsView(TemplateView):
                     'interesting_tag_names': meta_data.get('interesting_tag_names', None),
                     'ignored_tag_names': meta_data.get('ignored_tag_names', None),
                     'subscribed_tag_names': meta_data.get('subscribed_tag_names', None),
-                    'language_code': translation.get_language(),
+                    'language_code': language_code,
                     'name_of_anonymous_user' : models.profile.get_name_of_anonymous_user(),
                     'page_class': 'main-page',
                     'page_size': page_size,
