@@ -73,11 +73,11 @@ class QuestionsView(TemplateView):
     List of Questions, Tagged questions, and Unanswered questions.
     matching search query or user selection
     """ 
-    template_name="main_page.html"
-    is_specific=False
-    jinja2_rendering=True
     questions_url=None
     ask_url=None
+    template_name = "main_page.html"
+    is_specific = False
+    jinja2_rendering = True
     thread_ids = None
 
     def render_to_response(self, context, **response_kwargs):
