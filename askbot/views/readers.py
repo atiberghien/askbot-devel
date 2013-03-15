@@ -73,8 +73,6 @@ class QuestionsView(TemplateView):
     List of Questions, Tagged questions, and Unanswered questions.
     matching search query or user selection
     """ 
-    questions_url=None
-    ask_url=None
     template_name = "main_page.html"
     is_specific = False
     jinja2_rendering = True
@@ -92,6 +90,12 @@ class QuestionsView(TemplateView):
                                 context, 
                                 self.request)
     
+    def get_questions_url(self):
+        return None
+
+    def get_ask_url(self):
+        return None
+    
     def get_context_data(self, **kwargs):
         context = TemplateView.get_context_data(self, **kwargs)
         
@@ -105,8 +109,8 @@ class QuestionsView(TemplateView):
                                    tags=kwargs["tags"], 
                                    author=kwargs["author"],
                                    page=kwargs["page"],
-                                   questions_url=self.questions_url,
-                                   ask_url=self.ask_url)
+                                   questions_url=self.get_questions_url(),
+                                   ask_url=self.get_ask_url())
         
         page_size = int(askbot_settings.DEFAULT_QUESTIONS_PAGE_SIZE)
     
@@ -249,6 +253,8 @@ class QuestionsView(TemplateView):
                     'query_string': search_state.query_string(),
                     'search_state': search_state,
                     'feed_url': context_feed_url,
+                    'questions_url': self.get_questions_url(),
+                    'ask_url': self.get_ask_url(),
                 })
         return context
 
