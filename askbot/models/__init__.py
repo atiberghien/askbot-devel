@@ -359,9 +359,14 @@ def record_award_event(instance, created, **kwargs):
     We also recaculate awarded_count of this badge and user information.
     """
     if created:
+        try:
+            profile = instance.user.get_profile()
+        except:
+            return
+            
         #todo: change this to community user who gives the award
         activity = Activity(
-                        user=instance.user,
+                        user=profile.user,
                         active_at=instance.awarded_at,
                         content_object=instance,
                         activity_type=const.TYPE_ACTIVITY_PRIZE
@@ -373,14 +378,14 @@ def record_award_event(instance, created, **kwargs):
         instance.badge.save()
 
         badge = get_badge(instance.badge.slug)
-
+        
         if badge.level == const.GOLD_BADGE:
-            instance.user.get_profile().gold += 1
+            profile.gold += 1
         if badge.level == const.SILVER_BADGE:
-            instance.user.get_profile().silver += 1
+            profile.silver += 1
         if badge.level == const.BRONZE_BADGE:
-            instance.user.get_profile().bronze += 1
-        instance.user.get_profile().save()
+            profile.bronze += 1
+        profile.save()
 
 def notify_award_message(instance, created, **kwargs):
     """
@@ -389,7 +394,10 @@ def notify_award_message(instance, created, **kwargs):
     if askbot_settings.BADGES_MODE != 'public':
         return
     if created:
-        user = instance.user
+        try:
+            profile = instance.user.get_profile()
+        except:
+            return
 
         badge = get_badge(instance.badge.slug)
 
@@ -397,7 +405,7 @@ def notify_award_message(instance, created, **kwargs):
                 u"Check out <a href=\"%(user_profile)s\">your profile</a>.") \
                 % {
                     'badge_name':badge.name,
-                    'user_profile':user.get_profile().get_absolute_url()
+                    'user_profile':profile.get_absolute_url()
                 }
 
 #        user.message_set.create(message=msg)
