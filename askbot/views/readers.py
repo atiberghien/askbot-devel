@@ -349,286 +349,281 @@ def tags(request):#view showing a listing of available tags - plain list
 
     return render_into_skin('tags.html', data, request)
 
-@csrf.csrf_protect
-#@cache_page(60 * 5)
-def question(request, id, 
-             template_name="question.html", 
-             jinja2_rendering=True,
-             extra_context=None):#refactor - long subroutine. display question body, answers and comments
-    """view that displays body of the question and
+class QuestionView(TemplateView):
+    """
+    view that displays body of the question and
     all answers to it
     """
     
-    language_code = translation.get_language()
-    site = Site.objects.get_current()
-    
-    #process url parameters
-    #todo: fix inheritance of sort method from questions
-    #before = datetime.datetime.now()
-    default_sort_method = request.session.get('questions_sort_method', 'votes')
-    form = ShowQuestionForm(request.GET, default_sort_method)
-    form.full_clean()#always valid
-    show_answer = form.cleaned_data['show_answer']
-    show_comment = form.cleaned_data['show_comment']
-    show_page = form.cleaned_data['show_page']
-    answer_sort_method = form.cleaned_data['answer_sort_method']
+    template_name = "question.html"
+    jinja2_rendering = True
 
-    #load question and maybe refuse showing deleted question
-    #if the question does not exist - try mapping to old questions
-    #and and if it is not found again - then give up
-    try:
-        question_post = models.Post.objects.filter(
-                                post_type = 'question',
-                                id = id,
-                                thread__language_code=language_code,
-                                thread__site=site,
-                            ).select_related('thread')[0]
-    except IndexError:
-    # Handle URL mapping - from old Q/A/C/ URLs to the new one
+    def render_to_response(self, context, **response_kwargs):
+        if not self.jinja2_rendering :
+            return TemplateView.render_to_response(self, context)
+        
+        return render_into_skin(self.template_name, 
+                                context, 
+                                self.request) 
+
+    def get_context_data(self, **kwargs):
+        
+        language_code = translation.get_language()
+        site = Site.objects.get_current()
+        
+        #process url parameters
+        #todo: fix inheritance of sort method from questions
+        #before = datetime.datetime.now()
+        default_sort_method = self.request.session.get('questions_sort_method', 'votes')
+        form = ShowQuestionForm(self.request.GET, default_sort_method)
+        form.full_clean()#always valid
+        show_answer = form.cleaned_data['show_answer']
+        show_comment = form.cleaned_data['show_comment']
+        show_page = form.cleaned_data['show_page']
+        answer_sort_method = form.cleaned_data['answer_sort_method']
+    
+        #load question and maybe refuse showing deleted question
+        #if the question does not exist - try mapping to old questions
+        #and and if it is not found again - then give up
         try:
             question_post = models.Post.objects.filter(
-                                    post_type='question',
-                                    old_question_id = id,
+                                    post_type = 'question',
+                                    id = kwargs["question_id"],
                                     thread__language_code=language_code,
                                     thread__site=site,
                                 ).select_related('thread')[0]
         except IndexError:
-            raise Http404
-
-        if show_answer:
+        # Handle URL mapping - from old Q/A/C/ URLs to the new one
             try:
-                old_answer = models.Post.objects.get_answers().get(old_answer_id=show_answer)
-                return HttpResponseRedirect(old_answer.get_absolute_url())
-            except models.Post.DoesNotExist:
-                pass
-
-        elif show_comment:
-            try:
-                old_comment = models.Post.objects.get_comments().get(old_comment_id=show_comment)
-                return HttpResponseRedirect(old_comment.get_absolute_url())
-            except models.Post.DoesNotExist:
-                pass
-
-    try:
-        question_post.assert_is_visible_to(request.user)
-    except exceptions.QuestionHidden, e:
-        messages.info(request, unicode(e))
-        return HttpResponseRedirect(reverse('forum-index'))
-
-    #redirect if slug in the url is wrong
-#    if request.path.split('/')[-2] != question_post.slug:
-#        logging.debug('no slug match!')
-#        question_url = '?'.join((
-#                            question_post.get_absolute_url(),
-#                            urllib.urlencode(request.GET)
-#                        ))
-#        return HttpResponseRedirect(question_url)
-
-
-    #resolve comment and answer permalinks
-    #they go first because in theory both can be moved to another question
-    #this block "returns" show_post and assigns actual comment and answer
-    #to show_comment and show_answer variables
-    #in the case if the permalinked items or their parents are gone - redirect
-    #redirect also happens if id of the object's origin post != requested id
-    show_post = None #used for permalinks
-    if show_comment:
-        #if url calls for display of a specific comment,
-        #check that comment exists, that it belongs to
-        #the current question
-        #if it is an answer comment and the answer is hidden -
-        #redirect to the default view of the question
-        #if the question is hidden - redirect to the main page
-        #in addition - if url points to a comment and the comment
-        #is for the answer - we need the answer object
+                question_post = models.Post.objects.filter(
+                                        post_type='question',
+                                        old_question_id = kwargs["question_id"],
+                                        thread__language_code=language_code,
+                                        thread__site=site,
+                                    ).select_related('thread')[0]
+            except IndexError:
+                raise Http404
+    
+            if show_answer:
+                try:
+                    old_answer = models.Post.objects.get_answers().get(old_answer_id=show_answer)
+                    return HttpResponseRedirect(old_answer.get_absolute_url())
+                except models.Post.DoesNotExist:
+                    pass
+    
+            elif show_comment:
+                try:
+                    old_comment = models.Post.objects.get_comments().get(old_comment_id=show_comment)
+                    return HttpResponseRedirect(old_comment.get_absolute_url())
+                except models.Post.DoesNotExist:
+                    pass
+    
         try:
-            show_comment = models.Post.objects.get_comments().get(id=show_comment)
-        except models.Post.DoesNotExist:
-            error_message = _(
-                'Sorry, the comment you are looking for has been '
-                'deleted and is no longer accessible'
-            )
-            messages.error(request, error_message)
-            return HttpResponseRedirect(question_post.thread.get_absolute_url())
-
-        if str(show_comment.thread._question_post().id) != str(id):
-            return HttpResponseRedirect(show_comment.get_absolute_url())
-        show_post = show_comment.parent
-
-        try:
-            show_comment.assert_is_visible_to(request.user)
-        except exceptions.AnswerHidden, e:
-            messages.error(request, unicode(e))
-            #use reverse function here because question is not yet loaded
-            return HttpResponseRedirect(reverse('question', kwargs = {'id': id}))
+            question_post.assert_is_visible_to(self.request.user)
         except exceptions.QuestionHidden, e:
-            messages.error(request, unicode(e))
+            messages.info(self.request, unicode(e))
             return HttpResponseRedirect(reverse('forum-index'))
-
-    elif show_answer:
-        #if the url calls to view a particular answer to 
-        #question - we must check whether the question exists
-        #whether answer is actually corresponding to the current question
-        #and that the visitor is allowed to see it
-        show_post = get_object_or_404(models.Post, post_type='answer', id=show_answer)
-        if str(show_post.thread._question_post().id) != str(id):
-            return HttpResponseRedirect(show_post.get_absolute_url())
-
-        try:
-            show_post.assert_is_visible_to(request.user)
-        except django_exceptions.PermissionDenied, e:
-            messages.error(request, unicode(e))
-            return HttpResponseRedirect(reverse('question', kwargs = {'id': id}))
-
-    thread = question_post.thread
-
-    logging.debug('answer_sort_method=' + unicode(answer_sort_method))
-
-    #load answers and post id's->athor_id mapping
-    #posts are pre-stuffed with the correctly ordered comments
-    updated_question_post, answers, post_to_author = thread.get_cached_post_data(
-                                sort_method = answer_sort_method,
-                            )
-    question_post.set_cached_comments(updated_question_post.get_cached_comments())
-
-
-    #Post.objects.precache_comments(for_posts=[question_post] + answers, visitor=request.user)
-
-    user_votes = {}
-    user_post_id_list = list()
-    #todo: cache this query set, but again takes only 3ms!
-    if request.user.is_authenticated():
-        user_votes = Vote.objects.filter(
-                            user=request.user,
-                            voted_post__id__in = post_to_author.keys()
-                        ).values_list('voted_post_id', 'vote')
-        user_votes = dict(user_votes)
-        #we can avoid making this query by iterating through
-        #already loaded posts
-        user_post_id_list = [
-            id for id in post_to_author if post_to_author[id] == request.user.id
-        ]
-
-    #resolve page number and comment number for permalinks
-    show_comment_position = None
-    if show_comment:
-        show_page = show_comment.get_page_number(answer_posts=answers)
-        show_comment_position = show_comment.get_order_number()
-    elif show_answer:
-        show_page = show_post.get_page_number(answer_posts=answers)
-
-    objects_list = Paginator(answers, const.ANSWERS_PAGE_SIZE)
-    if show_page > objects_list.num_pages:
-        return HttpResponseRedirect(question_post.get_absolute_url())
-    page_objects = objects_list.page(show_page)
-
-    #count visits
-    #import ipdb; ipdb.set_trace()
-    if functions.not_a_robot_request(request):
-        #todo: split this out into a subroutine
-        #todo: merge view counts per user and per session
-        #1) view count per session
-        update_view_count = False
-        if 'question_view_times' not in request.session:
-            request.session['question_view_times'] = {}
-
-        last_seen = request.session['question_view_times'].get(question_post.id, None)
-
-        if thread.last_activity_by_id != request.user.id:
-            if last_seen:
-                if last_seen < thread.last_activity_at:
+    
+        #redirect if slug in the url is wrong
+#        if self.request.path.split('/')[-2] != question_post.slug:
+#            logging.debug('no slug match!')
+#            question_url = '?'.join((
+#                                question_post.get_absolute_url(),
+#                                urllib.urlencode(self.request.GET)
+#                            ))
+#            return HttpResponseRedirect(question_url)
+    
+    
+        #resolve comment and answer permalinks
+        #they go first because in theory both can be moved to another question
+        #this block "returns" show_post and assigns actual comment and answer
+        #to show_comment and show_answer variables
+        #in the case if the permalinked items or their parents are gone - redirect
+        #redirect also happens if id of the object's origin post != requested id
+        show_post = None #used for permalinks
+        if show_comment:
+            #if url calls for display of a specific comment,
+            #check that comment exists, that it belongs to
+            #the current question
+            #if it is an answer comment and the answer is hidden -
+            #redirect to the default view of the question
+            #if the question is hidden - redirect to the main page
+            #in addition - if url points to a comment and the comment
+            #is for the answer - we need the answer object
+            try:
+                show_comment = models.Post.objects.get_comments().get(id=show_comment)
+            except models.Post.DoesNotExist:
+                error_message = _(
+                    'Sorry, the comment you are looking for has been '
+                    'deleted and is no longer accessible'
+                )
+                messages.error(self.request, error_message)
+                return HttpResponseRedirect(question_post.thread.get_absolute_url())
+    
+            if str(show_comment.thread._question_post().id) != str(id):
+                return HttpResponseRedirect(show_comment.get_absolute_url())
+            show_post = show_comment.parent
+    
+            try:
+                show_comment.assert_is_visible_to(self.request.user)
+            except exceptions.AnswerHidden, e:
+                messages.error(self.request, unicode(e))
+                #use reverse function here because question is not yet loaded
+                return HttpResponseRedirect(reverse('question', kwargs = {'id': kwargs["question_id"]}))
+            except exceptions.QuestionHidden, e:
+                messages.error(self.request, unicode(e))
+                return HttpResponseRedirect(reverse('forum-index'))
+    
+        elif show_answer:
+            #if the url calls to view a particular answer to 
+            #question - we must check whether the question exists
+            #whether answer is actually corresponding to the current question
+            #and that the visitor is allowed to see it
+            show_post = get_object_or_404(models.Post, post_type='answer', id=show_answer)
+            if str(show_post.thread._question_post().id) != str(kwargs["question_id"]):
+                return HttpResponseRedirect(show_post.get_absolute_url())
+    
+            try:
+                show_post.assert_is_visible_to(self.request.user)
+            except django_exceptions.PermissionDenied, e:
+                messages.error(self.request, unicode(e))
+                return HttpResponseRedirect(reverse('question', kwargs = {'question_id': kwargs["question_id"]}))
+    
+        thread = question_post.thread
+    
+        logging.debug('answer_sort_method=' + unicode(answer_sort_method))
+    
+        #load answers and post id's->athor_id mapping
+        #posts are pre-stuffed with the correctly ordered comments
+        updated_question_post, answers, post_to_author = thread.get_cached_post_data(
+                                    sort_method = answer_sort_method,
+                                )
+        question_post.set_cached_comments(updated_question_post.get_cached_comments())
+    
+    
+        #Post.objects.precache_comments(for_posts=[question_post] + answers, visitor=self.request.user)
+    
+        user_votes = {}
+        user_post_id_list = list()
+        #todo: cache this query set, but again takes only 3ms!
+        if self.request.user.is_authenticated():
+            user_votes = Vote.objects.filter(
+                                user=self.request.user,
+                                voted_post__id__in = post_to_author.keys()
+                            ).values_list('voted_post_id', 'vote')
+            user_votes = dict(user_votes)
+            #we can avoid making this query by iterating through
+            #already loaded posts
+            user_post_id_list = [
+                id for id in post_to_author if post_to_author[id] == self.request.user.id
+            ]
+    
+        #resolve page number and comment number for permalinks
+        show_comment_position = None
+        if show_comment:
+            show_page = show_comment.get_page_number(answer_posts=answers)
+            show_comment_position = show_comment.get_order_number()
+        elif show_answer:
+            show_page = show_post.get_page_number(answer_posts=answers)
+    
+        objects_list = Paginator(answers, const.ANSWERS_PAGE_SIZE)
+        if show_page > objects_list.num_pages:
+            return HttpResponseRedirect(question_post.get_absolute_url())
+        page_objects = objects_list.page(show_page)
+    
+        #count visits
+        #import ipdb; ipdb.set_trace()
+        if functions.not_a_robot_request(self.request):
+            #todo: split this out into a subroutine
+            #todo: merge view counts per user and per session
+            #1) view count per session
+            update_view_count = False
+            if 'question_view_times' not in self.request.session:
+                self.request.session['question_view_times'] = {}
+    
+            last_seen = self.request.session['question_view_times'].get(question_post.id, None)
+    
+            if thread.last_activity_by_id != self.request.user.id:
+                if last_seen:
+                    if last_seen < thread.last_activity_at:
+                        update_view_count = True
+                else:
                     update_view_count = True
-            else:
-                update_view_count = True
-
-        request.session['question_view_times'][question_post.id] = \
-                                                    datetime.datetime.now()
-
-        #2) run the slower jobs in a celery task
-        from askbot import tasks
-        tasks.record_question_visit.delay(
-            question_post = question_post,
-            user = request.user,
-            update_view_count = update_view_count
-        )
-
-    paginator_data = {
-        'is_paginated' : (objects_list.count > const.ANSWERS_PAGE_SIZE),
-        'pages': objects_list.num_pages,
-        'page': show_page,
-        'has_previous': page_objects.has_previous(),
-        'has_next': page_objects.has_next(),
-        'previous': page_objects.previous_page_number(),
-        'next': page_objects.next_page_number(),
-        'base_url' : request.path + '?sort=%s&amp;' % answer_sort_method,
-    }
-    paginator_context = functions.setup_paginator(paginator_data)
-
-    #todo: maybe consolidate all activity in the thread
-    #for the user into just one query?
-    favorited = thread.has_favorite_by_user(request.user)
-
-    is_cacheable = True
-    if show_page != 1:
-        is_cacheable = False
-    elif show_comment_position > askbot_settings.MAX_COMMENTS_TO_SHOW:
-        is_cacheable = False
-
-    answer_form = AnswerForm(
-        initial = {
-            'wiki': question_post.wiki and askbot_settings.WIKI_ON,
-            'email_notify': thread.is_followed_by(request.user)
+    
+            self.request.session['question_view_times'][question_post.id] = \
+                                                        datetime.datetime.now()
+    
+            #2) run the slower jobs in a celery task
+            from askbot import tasks
+            tasks.record_question_visit.delay(
+                question_post = question_post,
+                user = self.request.user,
+                update_view_count = update_view_count
+            )
+    
+        paginator_data = {
+            'is_paginated' : (objects_list.count > const.ANSWERS_PAGE_SIZE),
+            'pages': objects_list.num_pages,
+            'page': show_page,
+            'has_previous': page_objects.has_previous(),
+            'has_next': page_objects.has_next(),
+            'previous': page_objects.previous_page_number(),
+            'next': page_objects.next_page_number(),
+            'base_url' : self.request.path + '?sort=%s&amp;' % answer_sort_method,
         }
-    )
-
-    user_can_post_comment =  request.user.is_authenticated() and request.user.get_profile().can_post_comment()
-
-    user_already_gave_answer = False
-    previous_answer = None
-    if request.user.is_authenticated():
-        if askbot_settings.LIMIT_ONE_ANSWER_PER_USER:
-            for answer in answers:
-                if answer.author == request.user:
-                    user_already_gave_answer = True
-                    previous_answer = answer
-                    break
-
-    data = {
-        'is_cacheable': False,#is_cacheable, #temporary, until invalidation fix
-        'long_time': const.LONG_TIME,#"forever" caching
-        'page_class': 'question-page',
-        'active_tab': 'questions',
-        'question' : question_post,
-        'edit_question_url' : reverse('edit_question', args=[question_post.id]),
-        'thread': thread,
-        'answer' : answer_form,
-        'answers' : page_objects.object_list,
-        'answer_count': len(answers),
-        'form_answer_url' : reverse('answer', args=[question_post.id]) ,
-        'user_votes': user_votes,
-        'user_post_id_list': user_post_id_list,
-        'user_can_post_comment': user_can_post_comment,#in general
-        'user_already_gave_answer': user_already_gave_answer,
-        'previous_answer': previous_answer,
-        'tab_id' : answer_sort_method,
-        'favorited' : favorited,
-        'similar_threads' : thread.get_similar_threads(),
-        'language_code': translation.get_language(),
-        'paginator_context' : paginator_context,
-        'show_post': show_post,
-        'show_comment': show_comment,
-        'show_comment_position': show_comment_position,
-    }
+        paginator_context = functions.setup_paginator(paginator_data)
     
-    if extra_context:
-        data.update(extra_context)
+        #todo: maybe consolidate all activity in the thread
+        #for the user into just one query?
+        favorited = thread.has_favorite_by_user(self.request.user)
     
-    if not jinja2_rendering :
-        return render_to_response(template_name,
-                                  dictionary=data,
-                                  context_instance=RequestContext(request))
+        answer_form = AnswerForm(
+            initial = {
+                'wiki': question_post.wiki and askbot_settings.WIKI_ON,
+                'email_notify': thread.is_followed_by(self.request.user)
+            }
+        )
     
-    return render_into_skin(template_name, data, request)
+        user_can_post_comment =  self.request.user.is_authenticated() and self.request.user.get_profile().can_post_comment()
+    
+        user_already_gave_answer = False
+        previous_answer = None
+        if self.request.user.is_authenticated():
+            if askbot_settings.LIMIT_ONE_ANSWER_PER_USER:
+                for answer in answers:
+                    if answer.author == self.request.user:
+                        user_already_gave_answer = True
+                        previous_answer = answer
+                        break
+    
+        data = {
+            'is_cacheable': False,#is_cacheable, #temporary, until invalidation fix
+            'long_time': const.LONG_TIME,#"forever" caching
+            'page_class': 'question-page',
+            'active_tab': 'questions',
+            'question' : question_post,
+            'edit_question_url' : reverse('edit_question', args=[question_post.id]),
+            'thread': thread,
+            'answer' : answer_form,
+            'answers' : page_objects.object_list,
+            'answer_count': len(answers),
+            'form_answer_url' : reverse('answer', args=[question_post.id]) ,
+            'user_votes': user_votes,
+            'user_post_id_list': user_post_id_list,
+            'user_can_post_comment': user_can_post_comment,#in general
+            'user_already_gave_answer': user_already_gave_answer,
+            'previous_answer': previous_answer,
+            'tab_id' : answer_sort_method,
+            'favorited' : favorited,
+            'similar_threads' : thread.get_similar_threads(),
+            'language_code': translation.get_language(),
+            'paginator_context' : paginator_context,
+            'show_post': show_post,
+            'show_comment': show_comment,
+            'show_comment_position': show_comment_position,
+        }
+    
+        return data
 
 def revisions(request, id, post_type = None):
     assert post_type in ('question', 'answer')
