@@ -543,7 +543,7 @@ class PostNewAnswerView(FormView):
                 return HttpResponseRedirect(self.get_answer_url(answer))
             except askbot_exceptions.AnswerAlreadyGiven, e:
                 messages.error(self.request, unicode(e))
-                answer = self.question.thread.get_answers_by_user(self.request.user)[0]
+                answer = self.current_question.thread.get_answers_by_user(self.request.user)[0]
                 return HttpResponseRedirect(answer.get_absolute_url())
             except exceptions.PermissionDenied, e:
                 messages.error(self.request, unicode(e))
