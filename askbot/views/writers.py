@@ -40,6 +40,8 @@ from django.contrib.sites.models import Site
 from django.contrib import messages
 from django.template.loader import render_to_string
 from django.template.context import RequestContext
+from django.views.generic.edit import FormView
+from askbot.forms import AnswerForm
 
 # used in index page
 INDEX_PAGE_SIZE = 20
@@ -510,55 +512,58 @@ def edit_answer(request,
 #todo: rename this function to post_new_answer
 #@decorators.check_authorization_to_post(_('Please log in to answer questions'))
 #@decorators.check_spam('text')
-def answer(request, id, redirect_to=None):#process a new answer
-    """view that posts new answer
 
-    anonymous users post into anonymous storage
-    and redirected to login page
+class PostNewAnswerView(FormView):
+    form_class = AnswerForm
+    
+    def get_success_url(self):
+        return self.current_question.get_absolute_url()
+    
+    def get_answer_url(self, answer):
+        return answer.get_absolute_url()
+    
+    def form_valid(self, form):
+        wiki = form.cleaned_data['wiki']
+        text = form.cleaned_data['text']
+        update_time = datetime.datetime.now()
 
-    authenticated users post directly
-    """
-    question = get_object_or_404(models.Post, post_type='question', id=id)
-    if request.method == "POST":
-        form = forms.AnswerForm(request.POST)
-        if form.is_valid():
-            wiki = form.cleaned_data['wiki']
-            text = form.cleaned_data['text']
-            update_time = datetime.datetime.now()
+        if self.request.user.is_authenticated():
+            try:
+                follow = form.cleaned_data['email_notify']
 
-            if request.user.is_authenticated():
-                try:
-                    follow = form.cleaned_data['email_notify']
+                user = form.get_post_user(self.request.user)
 
-                    user = form.get_post_user(request.user)
-
-                    answer = user.get_profile().post_answer(
-                                        question = question,
-                                        body_text = text,
-                                        follow = follow,
-                                        wiki = wiki,
-                                        timestamp = update_time,
-                                    )
-                    return HttpResponseRedirect(redirect_to or answer.get_absolute_url())
-                except askbot_exceptions.AnswerAlreadyGiven, e:
-                    messages.error(request, unicode(e))
-                    answer = question.thread.get_answers_by_user(request.user)[0]
-                    return HttpResponseRedirect(redirect_to or answer.get_absolute_url())
-                except exceptions.PermissionDenied, e:
-                    messages.error(request, unicode(e))
-            else:
-                request.session.flush()
-                models.AnonymousAnswer.objects.create(
-                    question=question,
-                    wiki=wiki,
-                    text=text,
-                    summary=strip_tags(text)[:120],
-                    session_key=request.session.session_key,
-                    ip_addr=request.META['REMOTE_ADDR'],
-                )
-                return HttpResponseRedirect(url_utils.get_login_url())
-
-    return HttpResponseRedirect(redirect_to or question.get_absolute_url())
+                answer = user.get_profile().post_answer(
+                                    question = self.current_question,
+                                    body_text = text,
+                                    follow = follow,
+                                    wiki = wiki,
+                                    timestamp = update_time,
+                                )
+                return HttpResponseRedirect(self.get_answer_url(answer))
+            except askbot_exceptions.AnswerAlreadyGiven, e:
+                messages.error(self.request, unicode(e))
+                answer = self.question.thread.get_answers_by_user(self.request.user)[0]
+                return HttpResponseRedirect(answer.get_absolute_url())
+            except exceptions.PermissionDenied, e:
+                messages.error(self.request, unicode(e))
+        else:
+            self.request.session.flush()
+            models.AnonymousAnswer.objects.create(
+                question=self.current_question,
+                wiki=wiki,
+                text=text,
+                summary=strip_tags(text)[:120],
+                session_key=self.request.session.session_key,
+                ip_addr=self.request.META['REMOTE_ADDR'],
+            )
+            return HttpResponseRedirect(url_utils.get_login_url())
+        
+        return FormView.form_valid(self, form)
+    
+    def post(self, request, question_id, **kwargs):
+        self.current_question = models.Post.objects.get(id=question_id, post_type='question')
+        return FormView.post(self, request, **kwargs)
 
 def __generate_comments_json(obj, user):#non-view generates json data for the post comments
     """non-view generates json data for the post comments
