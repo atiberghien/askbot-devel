@@ -215,6 +215,14 @@ class AskbotBaseProfile(models.Model):
     seen_response_count = models.IntegerField(default=0)
     consecutive_days_visit_count = models.IntegerField(default=0)
     is_fake = models.BooleanField(default=False)
+
+    @property
+    def tag_selections(self):
+	"""
+	Temp property to mock the reverse relation called 'tag_selections' on the User model. See tag.py (MarkedTag)
+	FIXME.
+	"""
+	return self.user.tag_selections
     
     def strip_email_signature(self, text):
         """strips email signature from the end of the text"""
@@ -1773,7 +1781,12 @@ class AskbotBaseProfile(models.Model):
         the admin must be both superuser and staff member
         the latter is because staff membership is required
         to access the live settings"""
-        return (self.user.is_superuser and self.user.is_staff)
+	try:
+	        is_admin = self.user.is_superuser and self.user.is_staff
+	except:
+		is_admin = False
+
+	return is_admin
     
     def remove_admin_status(self):
         self.user.is_staff = False
@@ -2397,7 +2410,7 @@ class AskbotProfile(AskbotBaseProfile, UserenaLanguageBaseProfile):
     show_country = models.BooleanField(default = False)
     date_of_birth = models.DateField(null=True, blank=True)
     about = models.TextField(blank=True)
-    
+
     class Meta:
         app_label = 'askbot'
         

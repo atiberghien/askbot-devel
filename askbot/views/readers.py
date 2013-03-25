@@ -88,7 +88,6 @@ class QuestionsView(TemplateView):
         if not self.jinja2_rendering :
             return TemplateView.render_to_response(self, context)
         
-        print self.template_name
         return render_into_skin(self.template_name, 
                                 context, 
                                 self.request)
