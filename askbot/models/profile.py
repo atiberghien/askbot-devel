@@ -218,11 +218,11 @@ class AskbotBaseProfile(models.Model):
 
     @property
     def tag_selections(self):
-	"""
-	Temp property to mock the reverse relation called 'tag_selections' on the User model. See tag.py (MarkedTag)
-	FIXME.
-	"""
-	return self.user.tag_selections
+        """
+        Temp property to mock the reverse relation called 'tag_selections' on the User model. See tag.py (MarkedTag)
+        FIXME.
+        """
+        return self.user.tag_selections
     
     def strip_email_signature(self, text):
         """strips email signature from the end of the text"""
@@ -1782,9 +1782,9 @@ class AskbotBaseProfile(models.Model):
         the latter is because staff membership is required
         to access the live settings"""
 	try:
-	        is_admin = self.user.is_superuser and self.user.is_staff
-	except:
-		is_admin = False
+            is_admin = self.user.is_superuser and self.user.is_staff
+        except:
+            is_admin = False
 
 	return is_admin
     
