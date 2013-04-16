@@ -431,83 +431,84 @@ def edit_question(request, id):
         messages.error(request, unicode(e))
         return HttpResponseRedirect(question.get_absolute_url())
 
-@login_required
-@csrf.csrf_protect
-@decorators.check_spam('text')
-def edit_answer(request, 
-                id,
-                jinja2_rendering=True,
-                template_name='answer_edit.html',
-                extra_context=None,
-                ):
-    answer = get_object_or_404(models.Post, id=id)
-    latest_revision = answer.get_latest_revision()
-    try:
-        request.user.get_profile().assert_can_edit_answer(answer)
-        latest_revision = answer.get_latest_revision()
-        if request.method == "POST":
-            if 'select_revision' in request.POST:
-                # user has changed revistion number
-                revision_form = forms.RevisionForm(
-                                                answer, 
-                                                latest_revision,
-                                                request.POST
-                                            )
-                if revision_form.is_valid():
-                    # Replace with those from the selected revision
-                    rev = revision_form.cleaned_data['revision']
-                    selected_revision = models.PostRevision.objects.answer_revisions().get(
-                                                            post = answer,
-                                                            revision = rev
-                                                        )
-                    form = forms.EditAnswerForm(answer, selected_revision)
-                else:
-                    form = forms.EditAnswerForm(
-                                            answer,
-                                            latest_revision,
-                                            request.POST
-                                        )
-            else:
-                form = forms.EditAnswerForm(answer, latest_revision, request.POST)
-                revision_form = forms.RevisionForm(answer, latest_revision)
+class EditAnswerView(FormView):
+    template_name = "answer_edit.html"
+    jinja2_rendering = True
 
-                if form.is_valid():
-                    if form.has_changed():
-                        user = form.get_post_user(request.user)
-                        user.get_profile().edit_answer(
-                                answer = answer,
-                                body_text = form.cleaned_data['text'],
-                                revision_comment = form.cleaned_data['summary'],
-                                wiki = form.cleaned_data.get('wiki', answer.wiki),
-                                #todo: add wiki field to form
-                            )
-                    
-                    redirect_to = request.POST.get('next', answer.get_absolute_url())
-                    return HttpResponseRedirect(redirect_to)
-        else:
-            revision_form = forms.RevisionForm(answer, latest_revision)
-            form = forms.EditAnswerForm(answer, latest_revision)
-        data = {
+    def render_to_response(self, context, **response_kwargs):
+        if not self.jinja2_rendering :
+            return FormView.render_to_response(self, context)
+        
+        return render_into_skin(self.template_name, 
+                                context, 
+                                self.request)
+    
+    def get_context_data(self, answer_id, **kwargs):
+        context = FormView.get_context_data(self, **kwargs)
+        
+        answer = get_object_or_404(models.Post, id=answer_id)
+        latest_revision = answer.get_latest_revision()
+        revision_form = forms.RevisionForm(answer, latest_revision)
+        form = forms.EditAnswerForm(answer, latest_revision)
+        
+        context.update({
             'page_class': 'edit-answer-page',
             'active_tab': 'questions',
             'answer': answer,
             'revision_form': revision_form,
             'form': form,
-        }
+        })
         
-        if extra_context:
-            data.update(extra_context)
-        
-        if jinja2_rendering:
-            return render_into_skin(template_name, data, request)
-        else:
-            return render_to_response(template_name,
-                                      data,
-                                      context_instance=RequestContext(request))
+        return context
+    
+    def get_success_url(self):
+        return self.request.POST.get('next', self.answer.get_absolute_url())
+    
+    def get(self, request, *args, **kwargs):
+        return self.render_to_response(self.get_context_data(**kwargs))
 
-    except exceptions.PermissionDenied, e:
-        messages.error(request, unicode(e))
-        return HttpResponseRedirect(answer.get_absolute_url())
+    def post(self, request, *args, **kwargs):
+        self.answer = get_object_or_404(models.Post, id=kwargs["answer_id"])
+        self.current_question = self.answer.thread.question
+        latest_revision = self.answer.get_latest_revision()
+        
+        if 'select_revision' in request.POST:
+            # user has changed revistion number
+            revision_form = forms.RevisionForm(
+                                            self.answer, 
+                                            latest_revision,
+                                            request.POST
+                                        )
+            if revision_form.is_valid():
+                # Replace with those from the selected revision
+                rev = revision_form.cleaned_data['revision']
+                selected_revision = models.PostRevision.objects.answer_revisions().get(
+                                                        post = self.answer,
+                                                        revision = rev
+                                                    )
+                form = forms.EditAnswerForm(self.answer, selected_revision)
+            else:
+                form = forms.EditAnswerForm(
+                                        self.answer,
+                                        latest_revision,
+                                        request.POST
+                                    )
+        else:
+            form = forms.EditAnswerForm(self.answer, latest_revision, request.POST)
+            revision_form = forms.RevisionForm(self.answer, latest_revision)
+
+            if form.is_valid():
+                if form.has_changed():
+                    user = form.get_post_user(request.user)
+                    user.get_profile().edit_answer(
+                            answer = self.answer,
+                            body_text = form.cleaned_data['text'],
+                            revision_comment = form.cleaned_data['summary'],
+                            wiki = form.cleaned_data.get('wiki', self.answer.wiki),
+                            #todo: add wiki field to form
+                        )
+                
+        return HttpResponseRedirect(self.get_success_url())
 
 #todo: rename this function to post_new_answer
 #@decorators.check_authorization_to_post(_('Please log in to answer questions'))
