@@ -183,7 +183,7 @@ class ThreadManager(models.Manager):
                 site=site,
                 posts__post_type='question', 
                 posts__deleted=False,
-                #is_specific=is_specific
+                is_specific=is_specific
             ) # (***) brings `askbot_post` into the SQL query, see the ordering section below
 
         if thread_ids != None:
