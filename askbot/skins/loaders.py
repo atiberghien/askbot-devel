@@ -80,9 +80,9 @@ class SkinEnvironment(CoffinEnvironment):
             return '<link href="%s" rel="stylesheet" type="text/css" />' % url
         return ''
 
-def include_django(template_name, request):
+def include_django(template_name, request, **kwargs):
     return render_to_string(template_name, 
-                            {},
+                            kwargs,
                             context_instance=RequestContext(request))
 
 def load_skins():
