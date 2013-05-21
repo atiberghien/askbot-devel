@@ -43,7 +43,13 @@ class ReputeAdmin(admin.ModelAdmin):
 class ActivityAdmin(admin.ModelAdmin):
     """  admin class"""
     
-admin.site.register(models.Thread)
+class ThreadAdmin(admin.ModelAdmin):
+    list_display = ('title', 'language_code', 'site', 'is_specific')
+    list_filter = ('language_code', 'site', 'is_specific')
+    ordering = ['title']
+    search_fields = ['title']
+    
+admin.site.register(models.Thread, ThreadAdmin)
 admin.site.register(models.Post)
 admin.site.register(models.Tag, TagAdmin)
 admin.site.register(models.Vote, VoteAdmin)
