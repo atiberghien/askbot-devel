@@ -133,11 +133,7 @@ def format_instant_notification_email(
         content_preview = post.format_for_email(is_leaf_post = True)
 
     #add indented summaries for the parent posts
-    content_preview += post.format_for_email_as_parent_thread_summary()
-
-    content_preview += '<p>======= Full thread summary =======</p>'
-
-    content_preview += post.thread.format_for_email()
+    #content_preview += post.format_for_email_as_parent_thread_summary()
 
     if post.is_comment():
         if update_type.endswith('update'):
@@ -158,50 +154,51 @@ def format_instant_notification_email(
         raise ValueError('unrecognized post type')
 
     post_url = strip_path(site_url) + post.get_absolute_url()
-    user_url = strip_path(site_url) + from_user.get_absolute_url()
+    user_url = strip_path(site_url) + from_user.get_profile().get_absolute_url()
     user_action = user_action % {
-        'user': '<a href="%s">%s</a>' % (user_url, from_user.username),
+        'user': '<a href="%s">%s</a>' % (user_url, from_user.get_profile().get_full_name_or_username()),
         'post_link': '<a href="%s">%s</a>' % (post_url, _(post.post_type))
     }
 
     can_reply = to_user.get_profile().can_post_by_email()
 
-    if can_reply:
-        reply_separator = const.SIMPLE_REPLY_SEPARATOR_TEMPLATE % \
-                    _('To reply, PLEASE WRITE ABOVE THIS LINE.')
-        if post.post_type == 'question' and alt_reply_address:
-            data = {
-                'addr': alt_reply_address,
-                'subject': urllib.quote(
-                        ('Re: ' + post.thread.title).encode('utf-8')
-                    )
-            }
-            reply_separator += '<p>' + \
-                const.REPLY_WITH_COMMENT_TEMPLATE % data
-            reply_separator += '</p>'
-    else:
-        reply_separator = user_action
+#     if can_reply:
+#         reply_separator = const.SIMPLE_REPLY_SEPARATOR_TEMPLATE % \
+#                     _('To reply, PLEASE WRITE ABOVE THIS LINE.')
+#         if post.post_type == 'question' and alt_reply_address:
+#             data = {
+#                 'addr': alt_reply_address,
+#                 'subject': urllib.quote(
+#                         ('Re: ' + post.thread.title).encode('utf-8')
+#                     )
+#             }
+#             reply_separator += '<p>' + \
+#                 const.REPLY_WITH_COMMENT_TEMPLATE % data
+#             reply_separator += '</p>'
+#     else:
+#         reply_separator = user_action
                     
     update_data = {
-        'update_author_name': from_user.username,
-        'receiving_user_name': to_user.username,
+        'user_action' : user_action,
+        'update_author': from_user.get_profile(),
+        'receiving_user': to_user.get_profile(),
         'receiving_user_karma': to_user.get_profile().reputation,
         'reply_by_email_karma_threshold': askbot_settings.MIN_REP_TO_POST_BY_EMAIL,
         'can_reply': can_reply,
-        'content_preview': content_preview,#post.get_snippet()
+        'content_preview': content_preview,
         'update_type': update_type,
         'post_url': post_url,
         'origin_post_title': origin_post.thread.title,
         'user_subscriptions_url': user_subscriptions_url,
-        'reply_separator': reply_separator
+#         'reply_separator': reply_separator
     }
-    subject_line = _('"%(title)s"') % {'title': origin_post.thread.title}
-
-    content = template.render(Context(update_data))
+    
     if can_reply:
-        content += '<p style="font-size:8px;color:#aaa">' + \
-                    reply_address + '</p>'
-
+        update_data["content"] += reply_address
+    
+    print update_data.keys()
+    subject_line = _('"%(title)s"') % {'title': origin_post.thread.title}
+    content = template.render(Context(update_data))
     return subject_line, content
 
 def get_reply_to_addresses(user, post):
