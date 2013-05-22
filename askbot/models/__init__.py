@@ -87,18 +87,13 @@ def format_instant_notification_email(
     are supported
     """
 
-    site_url = askbot_settings.APP_URL
-    origin_post = post.get_origin_post()
-    #todo: create a better method to access "sub-urls" in user views
-    user_subscriptions_url = site_url + \
-                                reverse(
-                                    'user_subscriptions',
-                                    kwargs = {
-                                        'id': to_user.id,
-                                        'slug': slugify(to_user.username)
-                                    }
-                                )
 
+    context = {
+       'post' : post,
+       'user_subscriptions_url' : reverse('user_subscriptions', kwargs = {'id': to_user.id, 
+                                                                          'slug': slugify(to_user.username)})
+    }
+    
     if update_type == 'question_comment':
         assert(isinstance(post, Post) and post.is_comment())
         assert(post.parent and post.parent.is_question())
@@ -137,49 +132,27 @@ def format_instant_notification_email(
 
     if post.is_comment():
         if update_type.endswith('update'):
-            user_action = _('%(user)s edited a %(post_link)s.')
+            user_action = _('edited a')
         else:
-            user_action = _('%(user)s posted a %(post_link)s') 
+            user_action = _('posted a') 
     elif post.is_answer():
         if update_type.endswith('update'):
-            user_action = _('%(user)s edited an %(post_link)s.')
+            user_action = _('edited an')
         else:
-            user_action = _('%(user)s posted an %(post_link)s.') 
+            user_action = _('posted an') 
     elif post.is_question():
         if update_type.endswith('update'):
-            user_action = _('%(user)s edited a %(post_link)s.')
+            user_action = _('edited a')
         else:
-            user_action = _('%(user)s posted a %(post_link)s.') 
+            user_action = _('posted a') 
     else:
         raise ValueError('unrecognized post type')
 
-    post_url = strip_path(site_url) + post.get_absolute_url()
-    user_url = strip_path(site_url) + from_user.get_profile().get_absolute_url()
-    user_action = user_action % {
-        'user': '<a href="%s">%s</a>' % (user_url, from_user.get_profile().get_full_name_or_username()),
-        'post_link': '<a href="%s">%s</a>' % (post_url, _(post.post_type))
-    }
-
     can_reply = to_user.get_profile().can_post_by_email()
-
-#     if can_reply:
-#         reply_separator = const.SIMPLE_REPLY_SEPARATOR_TEMPLATE % \
-#                     _('To reply, PLEASE WRITE ABOVE THIS LINE.')
-#         if post.post_type == 'question' and alt_reply_address:
-#             data = {
-#                 'addr': alt_reply_address,
-#                 'subject': urllib.quote(
-#                         ('Re: ' + post.thread.title).encode('utf-8')
-#                     )
-#             }
-#             reply_separator += '<p>' + \
-#                 const.REPLY_WITH_COMMENT_TEMPLATE % data
-#             reply_separator += '</p>'
-#     else:
-#         reply_separator = user_action
-                    
-    update_data = {
+    
+    context.update({
         'user_action' : user_action,
+        'post_type' : _(post.post_type),
         'update_author': from_user.get_profile(),
         'receiving_user': to_user.get_profile(),
         'receiving_user_karma': to_user.get_profile().reputation,
@@ -187,18 +160,14 @@ def format_instant_notification_email(
         'can_reply': can_reply,
         'content_preview': content_preview,
         'update_type': update_type,
-        'post_url': post_url,
-        'origin_post_title': origin_post.thread.title,
-        'user_subscriptions_url': user_subscriptions_url,
-#         'reply_separator': reply_separator
-    }
+        'origin_post': post.get_origin_post(),
+    })
     
     if can_reply:
-        update_data["content"] += reply_address
+        context["content"] += reply_address
     
-    print update_data.keys()
-    subject_line = _('"%(title)s"') % {'title': origin_post.thread.title}
-    content = template.render(Context(update_data))
+    subject_line = _('"%(title)s"') % {'title': post.get_origin_post().thread.title}
+    content = template.render(Context(context))
     return subject_line, content
 
 def get_reply_to_addresses(user, post):
