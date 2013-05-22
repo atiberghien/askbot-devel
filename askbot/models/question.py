@@ -5,7 +5,7 @@ import re
 from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import User
-from django.core import cache  # import cache, not from cache import cache, to be able to monkey-patch cache.cache in test cases
+from django.core import cache
 from django.core.urlresolvers import reverse
 from django.utils.hashcompat import md5_constructor
 from django.utils.translation import ugettext as _
@@ -898,9 +898,7 @@ class Thread(models.Model):
         return last_updated_at, last_updated_by
 
     def get_summary_html(self, search_state):
-        html = self.get_cached_summary_html()
-        if not html:
-            html = self.update_summary_html()
+        html = self.update_summary_html()
 
         # use `<<<` and `>>>` because they cannot be confused with user input
         # - if user accidentialy types <<<tag-name>>> into question title or body,
@@ -920,9 +918,6 @@ class Thread(models.Model):
             html = html.replace(seq, full_url)
 
         return html
-
-    def get_cached_summary_html(self):
-        return cache.cache.get(self.SUMMARY_CACHE_KEY_TPL % self.id)
 
     def update_summary_html(self):
         context = {
