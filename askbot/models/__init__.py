@@ -15,6 +15,7 @@ from django.db import models
 from django.conf import settings as django_settings
 from django.contrib.contenttypes.models import ContentType
 from django.core import cache
+from django.utils import translation
 #from django.core import exceptions as django_exceptions
 #from django_countries.fields import CountryField
 #from askbot import exceptions as askbot_exceptions
@@ -86,7 +87,7 @@ def format_instant_notification_email(
     only update_types in const.RESPONSE_ACTIVITY_TYPE_MAP_FOR_TEMPLATES
     are supported
     """
-
+    translation.activate(post.get_origin_post().thread.language_code)
 
     context = {
        'post' : post,
@@ -168,6 +169,8 @@ def format_instant_notification_email(
     
     subject_line = _('"%(title)s"') % {'title': post.get_origin_post().thread.title}
     content = template.render(Context(context))
+    
+    translation.deactivate()
     return subject_line, content
 
 def get_reply_to_addresses(user, post):
