@@ -550,7 +550,7 @@ class Post(models.Model):
             return url
         elif self.is_comment():
             origin_post = self.get_origin_post()
-            return '%(url)s?comment=%(id)d#comment-%(id)d' % \
+            return '%(url)s#comment-%(id)d' % \
                 {'url': origin_post.get_absolute_url(thread=thread), 'id':self.id}
 
         raise NotImplementedError
