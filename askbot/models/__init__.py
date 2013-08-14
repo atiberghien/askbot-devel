@@ -129,7 +129,7 @@ def format_instant_notification_email(
         content_preview = post.format_for_email(is_leaf_post = True)
 
     #add indented summaries for the parent posts
-    #content_preview += post.format_for_email_as_parent_thread_summary()
+    content_preview += post.format_for_email_as_parent_thread_summary()
 
     if post.is_comment():
         if update_type.endswith('update'):
@@ -151,6 +151,26 @@ def format_instant_notification_email(
 
     can_reply = to_user.get_profile().can_post_by_email()
     
+    if can_reply:
+        reply_separator = const.SIMPLE_REPLY_SEPARATOR_TEMPLATE % \
+                    _('To reply, PLEASE WRITE ABOVE THIS LINE.')
+        if post.post_type == 'question' and alt_reply_address:
+            data = {
+                'addr': alt_reply_address,
+                'subject': urllib.quote(
+                        ('Re: ' + post.thread.title).encode('utf-8')
+                    )
+            }
+            reply_separator += '<p>' + \
+                const.REPLY_WITH_COMMENT_TEMPLATE % data
+            reply_separator += '</p>'
+        else:
+            reply_separator = '<p>%s</p>' % reply_separator
+
+        reply_separator += user_action
+    else:
+        reply_separator = user_action
+    
     context.update({
         'user_action' : user_action,
         'post_type' : _(post.post_type),
@@ -162,10 +182,11 @@ def format_instant_notification_email(
         'content_preview': content_preview,
         'update_type': update_type,
         'origin_post': post.get_origin_post(),
+        
+        'recipient_user': to_user.get_profile(),
+        'reply_separator': reply_separator,
+        'reply_address': reply_address,
     })
-    
-    if can_reply:
-        context["content"] += reply_address
     
     subject_line = _('"%(title)s"') % {'title': post.get_origin_post().thread.title}
     content = template.render(Context(context))
