@@ -229,10 +229,9 @@ def VALIDATE_EMAIL(
     try:
         content, stored_files, signature = mail.process_parts(parts, reply_code)
         user = reply_address_object.user
-        if signature and signature != user.email_signature:
-            user.email_signature = signature
-        user.email_isvalid = True
-        user.save()
+        if signature and signature != user.get_profile().email_signature:
+            user.get_profile().email_signature = signature
+        user.get_profile().save()
 
         data = {
             'site_name': askbot_settings.APP_SHORT_NAME,
@@ -275,19 +274,17 @@ def PROCESS(
     #2) process body text and email signature
     user = reply_address_object.user
     if signature:#if there, then it was stripped
-        if signature != user.email_signature:
-            user.email_signature = signature
+        if signature != user.get_profile().email_signature:
+            user.get_profile().email_signature = signature
     else:#try to strip signature
-        stripped_body_text = user.strip_email_signature(body_text)
+        stripped_body_text = user.get_profile().strip_email_signature(body_text)
         #todo: add test cases for emails without the signature
-        if stripped_body_text == body_text and user.email_signature:
+        if stripped_body_text == body_text and user.get_profile().email_signature:
             #todo: send an email asking to update the signature
             raise ValueError('email signature changed or unknown')
         body_text = stripped_body_text
 
-    #3) validate email address and save user
-    user.email_isvalid = True
-    user.save()#todo: actually, saving is not necessary, if nothing changed
+    user.get_profile().save()
 
     #4) actually make an edit in the forum
     robj = reply_address_object

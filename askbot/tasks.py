@@ -69,7 +69,7 @@ def notify_author_of_published_revision_celery_task(revision):
         data = {
             'site_name': askbot_settings.APP_SHORT_NAME,
             'post': revision.post,
-            'author_email_signature': revision.author.email_signature,
+            'author_email_signature': revision.author.get_profile().email_signature,
             'replace_content_address': replace_content_address,
             'reply_separator_line': reply_separator_line,
             'mailto_link_subject': mailto_link_subject,
