@@ -1,7 +1,7 @@
 #import collections
 import datetime
-#import hashlib
-#import logging
+import uuid
+import logging
 import urllib
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.db.models import signals as django_signals
@@ -87,7 +87,9 @@ def format_instant_notification_email(
     only update_types in const.RESPONSE_ACTIVITY_TYPE_MAP_FOR_TEMPLATES
     are supported
     """
-    translation.activate(post.get_origin_post().thread.language_code)
+    origin_post = post.get_origin_post()
+
+    translation.activate(origin_post.thread.language_code)
 
     context = {
        'post' : post,
@@ -109,6 +111,8 @@ def format_instant_notification_email(
         assert(isinstance(post, Post) and post.is_question())
     elif update_type == 'new_question':
         assert(isinstance(post, Post) and post.is_question())
+    elif update_type == 'post_shared':
+        pass
     else:
         raise ValueError('unexpected update_type %s' % update_type)
 
@@ -131,35 +135,48 @@ def format_instant_notification_email(
     #add indented summaries for the parent posts
     content_preview += post.format_for_email_as_parent_thread_summary()
 
-    if post.is_comment():
+    if update_type == 'post_shared':
+        user_action = _('%(user)s shared a %(post_link)s.')
+    elif post.is_comment():
         if update_type.endswith('update'):
-            user_action = _('edited a')
+            user_action = _('%(user)s edited a %(post_link)s.')
         else:
-            user_action = _('posted a') 
+            user_action = _('%(user)s posted a %(post_link)s')
     elif post.is_answer():
         if update_type.endswith('update'):
-            user_action = _('edited an')
+            user_action = _('%(user)s edited an %(post_link)s.')
         else:
-            user_action = _('posted an') 
+            user_action = _('%(user)s posted an %(post_link)s.')
     elif post.is_question():
         if update_type.endswith('update'):
-            user_action = _('edited a')
+            user_action = _('%(user)s edited a %(post_link)s.')
         else:
-            user_action = _('posted a') 
+            user_action = _('%(user)s posted a %(post_link)s.')
     else:
         raise ValueError('unrecognized post type')
+    
+    user_action = user_action % {'user' : from_user.get_profile().get_full_name_or_username(),
+                                 'post_link' : '<a href="http://imaginationforpeople.org/{{post.get_absolute_url()}}">%s</a>' % _(post.post_type)}
 
     can_reply = to_user.get_profile().can_post_by_email()
     
     if can_reply:
-        reply_separator = const.SIMPLE_REPLY_SEPARATOR_TEMPLATE % _('To reply, PLEASE WRITE ABOVE THIS LINE.')
+        reply_separator = const.SIMPLE_REPLY_SEPARATOR_TEMPLATE % \
+                    _('To reply, PLEASE WRITE ABOVE THIS LINE.')
         if post.post_type == 'question' and alt_reply_address:
-            data = { 'addr': alt_reply_address,
-                    'subject': urllib.quote(('Re: ' + post.thread.title).encode('utf-8'))}
-            reply_separator += '<p>' + const.REPLY_WITH_COMMENT_TEMPLATE % data
+            data = {
+                'addr': alt_reply_address,
+                'subject': urllib.quote(
+                        ('Re: ' + post.thread.title).encode('utf-8')
+                    )
+            }
+            reply_separator += '<p>' + \
+                const.REPLY_WITH_COMMENT_TEMPLATE % data
             reply_separator += '</p>'
         else:
             reply_separator = '<p>%s</p>' % reply_separator
+
+        reply_separator += user_action
     else:
         reply_separator = user_action
     
@@ -180,7 +197,7 @@ def format_instant_notification_email(
         'reply_address': reply_address,
     })
     
-    subject_line = _('"%(title)s"') % {'title': post.get_origin_post().thread.title}
+    subject_line = _('"%(title)s"') % {'title': origin_post.thread.title}
     content = template.render(Context(context))
     
     translation.deactivate()
@@ -235,11 +252,8 @@ def send_instant_notifications_about_activity_in_post(
                                                 post = None,
                                                 recipients = None,
                                             ):
-    """
-    function called when posts are updated
-    newly mentioned users are carried through to reduce
-    database hits
-    """
+    #reload object from the database
+    post = Post.objects.get(id=post.id)
     if post.is_approved() is False:
         return
 
@@ -261,7 +275,16 @@ def send_instant_notifications_about_activity_in_post(
                             origin_post,
                             update_activity.activity_type
                         )
-    #send email for all recipients
+
+    logger = logging.getLogger()
+    if logger.getEffectiveLevel() <= logging.DEBUG:
+        log_id = uuid.uuid1()
+        message = 'email-alert %s, logId=%s' % (post.get_absolute_url(), log_id)
+        logger.debug(message)
+    else:
+        log_id = None
+
+
     for user in recipients:
         reply_address, alt_reply_address = get_reply_to_addresses(user, post)
 
@@ -276,14 +299,22 @@ def send_instant_notifications_about_activity_in_post(
                         )
       
         headers['Reply-To'] = reply_address
-        mail.send_mail(
-            subject_line = subject_line,
-            body_text = body_text,
-            recipient_list = [user.email],
-            related_object = origin_post,
-            activity_type = const.TYPE_ACTIVITY_EMAIL_UPDATE_SENT,
-            headers = headers
-        )
+        try:
+            mail.send_mail(
+                subject_line=subject_line,
+                body_text=body_text,
+                recipient_list=[user.email],
+                related_object=origin_post,
+                activity_type=const.TYPE_ACTIVITY_EMAIL_UPDATE_SENT,
+                headers=headers,
+                raise_on_failure=True
+            )
+        except askbot_exceptions.EmailNotSent, error:
+            logger.debug(
+                '%s, error=%s, logId=%s' % (user.email, error, log_id)
+            )
+        else:
+            logger.debug('success %s, logId=%s' % (user.email, log_id))
 
 def notify_author_of_published_revision(
     revision = None, was_approved = None, **kwargs

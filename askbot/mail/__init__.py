@@ -1,21 +1,30 @@
 """functions that send email in askbot
 these automatically catch email-related exceptions
 """
-import os
-import smtplib
-import logging
-from django.core import mail
 from django.conf import settings as django_settings
-from django.core.exceptions import PermissionDenied
-from django.forms import ValidationError
-from django.utils.translation import ugettext_lazy as _
-from django.utils.translation import string_concat
-from django.template import Context
+DEBUG_EMAIL = getattr(django_settings, 'ASKBOT_DEBUG_INCOMING_EMAIL', False)
+
+import logging
+import os
+import re
+import smtplib
+import sys
 from askbot import exceptions
 from askbot import const
 from askbot.conf import settings as askbot_settings
 from askbot.utils import url_utils
 from askbot.utils.file_utils import store_file
+from askbot.utils.html import absolutize_urls
+from bs4 import BeautifulSoup
+from django.core import mail
+from django.core.exceptions import PermissionDenied
+from django.forms import ValidationError
+from django.utils.translation import ugettext as _
+from django.utils.translation import ugettext_lazy
+from django.utils.translation import string_concat
+from django.template import Context
+from django.utils.html import strip_tags
+
 #todo: maybe send_mail functions belong to models
 #or the future API
 def prefix_the_subject_line(subject):
@@ -77,6 +86,20 @@ def thread_headers(post, orig_post, update):
 
     return headers
 
+def clean_html_email(email_body):
+    """returns the content part from an HTML email.
+    todo: needs more clenup might not work for other email templates
+    that do not use table layout
+    """
+    soup = BeautifulSoup(email_body, 'html5lib')
+    body_element = soup.find('body')
+    filter_func = lambda s: bool(s.strip())
+    phrases = map(
+        lambda s: s.strip(),
+        filter(filter_func, body_element.get_text().split('\n'))
+    )
+    return '\n\n'.join(phrases)
+
 def send_mail(
             subject_line = None,
             body_text = None,
@@ -100,31 +123,36 @@ def send_mail(
 
     if raise_on_failure is True, exceptions.EmailNotSent is raised
     """
+    body_text = absolutize_urls(body_text)
     try:
         assert(subject_line is not None)
         subject_line = prefix_the_subject_line(subject_line)
-        msg = mail.EmailMessage(
-                        subject_line, 
-                        body_text, 
+        msg = mail.EmailMultiAlternatives(
+                        subject_line,
+                        clean_html_email(body_text),
                         from_email,
                         recipient_list,
                         headers = headers
                     )
-        msg.content_subtype = 'html'
+        msg.attach_alternative(body_text, "text/html")
         msg.send()
+        logging.debug('sent update to %s' % ','.join(recipient_list))
         if related_object is not None:
             assert(activity_type is not None)
     except Exception, error:
-        logging.critical(unicode(error))
+        sys.stderr.write('\n' + unicode(error).encode('utf-8') + '\n')
         if raise_on_failure == True:
             raise exceptions.EmailNotSent(unicode(error))
 
 def mail_moderators(
             subject_line = '',
             body_text = '',
-            raise_on_failure = False):
+            raise_on_failure = False,
+            headers = None
+        ):
     """sends email to forum moderators and admins
     """
+    body_text = absolutize_urls(body_text)
     from django.db.models import Q
     from askbot.models import User
     recipient_list = User.objects.filter(
@@ -139,28 +167,36 @@ def mail_moderators(
         from_email = django_settings.DEFAULT_FROM_EMAIL
 
     try:
-        mail.send_mail(subject_line, body_text, from_email, recipient_list)
+        msg = mail.EmailMessage(
+                        subject_line,
+                        body_text,
+                        from_email,
+                        recipient_list,
+                        headers = headers or {}
+                    )
+        msg.content_subtype = 'html'
+        msg.send()
     except smtplib.SMTPException, error:
-        logging.critical(unicode(error))
+        sys.stderr.write('\n' + unicode(error).encode('utf-8') + '\n')
         if raise_on_failure == True:
             raise exceptions.EmailNotSent(unicode(error))
 
-INSTRUCTIONS_PREAMBLE = _('<p>To ask by email, please:</p>')
-QUESTION_TITLE_INSTRUCTION = _(
+INSTRUCTIONS_PREAMBLE = ugettext_lazy('<p>To ask by email, please:</p>')
+QUESTION_TITLE_INSTRUCTION = ugettext_lazy(
     '<li>Type title in the subject line</li>'
 )
-QUESTION_DETAILS_INSTRUCTION = _(
+QUESTION_DETAILS_INSTRUCTION = ugettext_lazy(
     '<li>Type details of your question into the email body</li>'
 )
-OPTIONAL_TAGS_INSTRUCTION = _(
+OPTIONAL_TAGS_INSTRUCTION = ugettext_lazy(
 """<li>The beginning of the subject line can contain tags,
 <em>enclosed in the square brackets</em> like so: [Tag1; Tag2]</li>"""
 )
-REQUIRED_TAGS_INSTRUCTION = _(
+REQUIRED_TAGS_INSTRUCTION = ugettext_lazy(
 """<li>In the beginning of the subject add at least one tag
 <em>enclosed in the brackets</em> like so: [Tag1; Tag2].</li>"""
 )
-TAGS_INSTRUCTION_FOOTNOTE = _(
+TAGS_INSTRUCTION_FOOTNOTE = ugettext_lazy(
 """<p>Note that a tag may consist of more than one word, to separate
 the tags, use a semicolon or a comma, for example, [One tag; Other tag]</p>"""
 )
@@ -227,7 +263,7 @@ def bounce_email(
     headers = {}
     if reply_to:
         headers['Reply-To'] = reply_to
-        
+
     send_mail(
         recipient_list = (email,),
         subject_line = 'Re: ' + subject,
@@ -237,12 +273,14 @@ def bounce_email(
 
 def extract_reply(text):
     """take the part above the separator
-    and discard the last line above the separator"""
-    if const.REPLY_SEPARATOR_REGEX.search(text):
-        text = const.REPLY_SEPARATOR_REGEX.split(text)[0]
-        return '\n'.join(text.splitlines(True)[:-3])
-    else:
-        return text
+    and discard the last line above the separator
+    ``text`` is the input text
+    """
+    from askbot.mail import parsing
+    return parsing.extract_reply_contents(
+                                text,
+                                const.REPLY_SEPARATOR_REGEX
+                            )
 
 def process_attachment(attachment):
     """will save a single
@@ -261,10 +299,13 @@ def process_attachment(attachment):
 def extract_user_signature(text, reply_code):
     """extracts email signature as text trailing
     the reply code"""
-    if reply_code in text:
+    stripped_text = strip_tags(text)
+
+    signature = ''
+    if reply_code in stripped_text:
         #extract the signature
         tail = list()
-        for line in reversed(text.splitlines()):
+        for line in reversed(stripped_text.splitlines()):
             #scan backwards from the end until the magic line
             if reply_code in line:
                 break
@@ -275,47 +316,75 @@ def extract_user_signature(text, reply_code):
         while tail and (tail[0].startswith('>') or tail[0].strip() == ''):
             tail.pop(0)
 
-        return '\n'.join(tail)
-    else:
-        return ''
+        signature = '\n'.join(tail)
+
+    #patch signature to a sentinel value if it is truly empty, because we
+    #cannot allow empty signature field, which indicates no
+    #signature at all and in that case we ask user to create one
+    return signature or 'empty signature'
 
 
-def process_parts(parts, reply_code = None):
-    """Process parts will upload the attachments and parse out the
-    body, if body is multipart. Secondly - links to attachments
-    will be added to the body of the question.
-    Returns ready to post body of the message and the list 
+def process_parts(parts, reply_code=None, from_address=None):
+    """Uploads the attachments and parses out the
+    body, if body is multipart.
+    Links to attachments will be added to the body of the question.
+    Returns ready to post body of the message and the list
     of uploaded files.
     """
-    body_markdown = ''
+    body_text = ''
     stored_files = list()
     attachments_markdown = ''
+
+    if DEBUG_EMAIL:
+        sys.stderr.write('--- MESSAGE PARTS:\n\n')
+
     for (part_type, content) in parts:
         if part_type == 'attachment':
+            if DEBUG_EMAIL:
+                sys.stderr.write('REGULAR ATTACHMENT:\n')
             markdown, stored_file = process_attachment(content)
             stored_files.append(stored_file)
             attachments_markdown += '\n\n' + markdown
         elif part_type == 'body':
-            body_markdown += '\n\n' + content.strip('\n\t ')
+            if DEBUG_EMAIL:
+                sys.stderr.write('BODY:\n')
+                sys.stderr.write(content.encode('utf-8'))
+                sys.stderr.write('\n')
+            body_text += '\n\n' + content.strip('\n\t ')
         elif part_type == 'inline':
+            if DEBUG_EMAIL:
+                sys.stderr.write('INLINE ATTACHMENT:\n')
             markdown, stored_file = process_attachment(content)
             stored_files.append(stored_file)
-            body_markdown += markdown
+            body_text += markdown
 
-    #if the response separator is present - 
+    if DEBUG_EMAIL:
+        sys.stderr.write('--- THE END\n')
+
+    #if the response separator is present -
     #split the body with it, and discard the "so and so wrote:" part
     if reply_code:
-        signature = extract_user_signature(body_markdown, reply_code)
+        #todo: maybe move this part out
+        signature = extract_user_signature(body_text, reply_code)
+        body_text = extract_reply(body_text)
     else:
         signature = None
-    body_markdown = extract_reply(body_markdown)
 
-    body_markdown += attachments_markdown
-    return body_markdown.strip(), stored_files, signature
+    body_text += attachments_markdown
+
+    if from_address:
+        from askbot.mail import parsing
+        body_text = parsing.strip_trailing_sender_references(
+                                                        body_text,
+                                                        from_address
+                                                    )
+
+    return body_text.strip(), stored_files, signature
 
 
 def process_emailed_question(
-    from_address, subject, body_text, stored_files, tags = None
+    from_address, subject, body_text, stored_files,
+	tags=None
 ):
     """posts question received by email or bounces the message"""
     #a bunch of imports here, to avoid potential circular import issues
@@ -331,43 +400,57 @@ def process_emailed_question(
             'subject': subject,
             'body_text': body_text
         }
-        form = AskByEmailForm(data)
+        user = User.objects.get(email__iexact=from_address)
+        form = AskByEmailForm(data, user=user)
         if form.is_valid():
             email_address = form.cleaned_data['email']
-            user = User.objects.get(
-                        email__iexact = email_address
-                    )
 
             if user.get_profile().can_post_by_email() == False:
                 raise PermissionDenied(messages.insufficient_reputation(user))
 
-            if user.get_profile().email_isvalid == False:
+            body_text = form.cleaned_data['body_text']
+
+            stripped_body_text = user.strip_email_signature(body_text)
+
+            #note that signature '' means it is unset and 'empty signature' is a sentinel
+            #because there is no other way to indicate unset signature without adding
+            #another field to the user model
+            signature_changed = (
+                stripped_body_text == body_text and
+                user.email_signature != 'empty signature'
+            )
+
+            need_new_signature = (
+                user.email_isvalid is False or
+                user.email_signature == '' or
+                signature_changed
+            )
+            
+            #ask for signature response if user's email has not been
+            #validated yet or if email signature could not be found
+            if need_new_signature:
+
                 reply_to = ReplyAddress.objects.create_new(
                     user = user,
                     reply_action = 'validate_email'
-                ).as_email_address()
+                ).as_email_address(prefix='welcome-')
                 message = messages.ask_for_signature(user, footer_code = reply_to)
                 raise PermissionDenied(message)
 
             tagnames = form.cleaned_data['tagnames']
             title = form.cleaned_data['title']
-            body_text = form.cleaned_data['body_text']
 
             #defect - here we might get "too many tags" issue
             if tags:
                 tagnames += ' ' + ' '.join(tags)
 
-            stripped_body_text = user.get_profile().strip_email_signature(body_text)
-            if stripped_body_text == body_text and user.get_profile().email_signature:
-                #todo: send an email asking to update the signature
-                raise ValueError('email signature changed')
 
             user.get_profile().post_question(
-                title = title,
-                tags = tagnames.strip(),
-                body_text = stripped_body_text,
-                by_email = True,
-                email_address = from_address
+                title=title,
+                tags=tagnames.strip(),
+                body_text=stripped_body_text,
+                by_email=True,
+                email_address=from_address,
             )
         else:
             raise ValidationError()
