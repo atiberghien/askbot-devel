@@ -156,7 +156,8 @@ def format_instant_notification_email(
         raise ValueError('unrecognized post type')
     
     user_action = user_action % {'user' : from_user.get_profile().get_full_name_or_username(),
-                                 'post_link' : '<a href="http://imaginationforpeople.org/{{post.get_absolute_url()}}">%s</a>' % _(post.post_type)}
+                                 'post_link' : '<a href="http://imaginationforpeople.org/%s">%s</a>' % (post.get_absolute_url(),
+                                                                                                        _(post.post_type))}
 
     can_reply = to_user.get_profile().can_post_by_email()
     
