@@ -152,20 +152,14 @@ def format_instant_notification_email(
     can_reply = to_user.get_profile().can_post_by_email()
     
     if can_reply:
-        print "YOUHOUOUUUUUUUUUUUUUUUUUUUU"
         reply_separator = const.SIMPLE_REPLY_SEPARATOR_TEMPLATE % _('To reply, PLEASE WRITE ABOVE THIS LINE.')
         if post.post_type == 'question' and alt_reply_address:
-            data = {
-                'addr': alt_reply_address,
-                'subject': urllib.quote(('Re: ' + post.thread.title).encode('utf-8')
-                    )
-            }
+            data = { 'addr': alt_reply_address,
+                    'subject': urllib.quote(('Re: ' + post.thread.title).encode('utf-8'))}
             reply_separator += '<p>' + const.REPLY_WITH_COMMENT_TEMPLATE % data
             reply_separator += '</p>'
         else:
             reply_separator = '<p>%s</p>' % reply_separator
-
-        reply_separator += user_action
     else:
         reply_separator = user_action
     
