@@ -9,6 +9,7 @@ from django.template import Context
 from django.utils.translation import ugettext as _
 from django.utils.translation import ungettext
 from django.contrib.auth.models import User#, SiteProfileNotAvailable
+from django.contrib.sites.models import Site
 #from django.utils.safestring import mark_safe
 #from django.utils.html import escape
 from django.db import models
