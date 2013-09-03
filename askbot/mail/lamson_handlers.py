@@ -12,7 +12,6 @@ from askbot import mail
 from askbot.conf import settings as askbot_settings
 from askbot.skins.loaders import get_template
 from askbot.mail import DEBUG_EMAIL
-from django.contrib.auth.models import User
 
 #we might end up needing to use something like this
 #to distinguish the reply text from the quoted original message
@@ -143,10 +142,7 @@ def process_reply(func):
         error = None
 
         try:
-            reply_address = ReplyAddress.objects.get(address=address)
-            if reply_address.allowed_from_email != message.From:
-                reply_address.user = User.objects.get(id=django_settings.ANONYMOUS_USER_ID)
-                reply_address.save()
+            reply_address = ReplyAddress.objects.get(address = address)
 
             #here is the business part of this function
             parts = get_parts(message)
