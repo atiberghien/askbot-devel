@@ -317,10 +317,10 @@ def PROCESS(
     elif robj.reply_action == 'append_content':
         robj.edit_post(body_text)#in this case we don't touch the title
     elif robj.reply_action in add_post_actions:
-        if robj.was_used:
-            robj.edit_post(body_text, edit_response = True)
-        else:
-            robj.create_reply(body_text)
+#         if robj.was_used:
+#             robj.edit_post(body_text, edit_response = True)
+#         else:
+        robj.create_reply(body_text)
     elif robj.reply_action == 'validate_email':
         #todo: this is copy-paste - factor it out to askbot.mail.messages
         data = {
