@@ -375,14 +375,14 @@ class Post(models.Model):
 
         text = self.text
 
-        if _escape_html:
-            text = cgi.escape(text)
+        #if _escape_html:
+        #    text = cgi.escape(text)
 
         if _urlize:
             text = html.urlize(text)
 
-        if _use_markdown:
-            text = sanitize_html(markup.get_parser().convert(text))
+        #if _use_markdown:
+        #    text = sanitize_html(markup.get_parser().convert(text))
 
         #todo, add markdown parser call conditional on
         #self.use_markdown flag
